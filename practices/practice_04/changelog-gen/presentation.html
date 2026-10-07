@@ -91,7 +91,7 @@
 
 <section class="slide">
   <h2>Фича A: группировка по типам</h2>
-  <p>Ветка <code>feature-a</code>, коммит <code>2d5a0e5</code>. Код: <a href="src/changelog_gen/renderer.py">renderer.py</a>, тесты: <a href="tests/test_renderer.py">test_renderer.py</a>.</p>
+  <p>Ветка <code>feature-a</code>, коммит <code>53e20bd</code>. Код: <a href="src/changelog_gen/renderer.py">renderer.py</a>, тесты: <a href="tests/test_renderer.py">test_renderer.py</a>.</p>
   <pre><code>## 1.0.0
 
 ### Features
@@ -113,7 +113,7 @@
 
 <section class="slide">
   <h2>Фича B: breaking changes</h2>
-  <p>Worktree <code>../changelog-gen-b</code>, ветка <code>feature-b</code>, коммит <code>5cd5e05</code>.</p>
+  <p>Worktree <code>../changelog-gen-b</code>, ветка <code>feature-b</code>, коммит <code>e8e6801</code>.</p>
   <ul>
     <li><a href="src/changelog_gen/parser.py">parser.py</a>: <code>breaking</code> ставится по <code>!</code> и по футеру <code>BREAKING CHANGE:</code> / <code>BREAKING-CHANGE:</code>.</li>
     <li><a href="src/changelog_gen/cli.py">cli.py</a>: читает полные сообщения (<code>%B%x00</code>), иначе футер не виден.</li>
@@ -125,12 +125,12 @@
 
 <section class="slide">
   <h2>Слияние A и B</h2>
-  <p>Коммит <code>42e3ff3</code>. Конфликты в <code>renderer.py</code> и <code>tests/test_renderer.py</code>.</p>
-  <pre><code>*   42e3ff3 Merge branch 'feature-b' into feature-a
+  <p>Коммит <code>e474ef4</code>. Конфликты в <code>renderer.py</code> и <code>tests/test_renderer.py</code>.</p>
+  <pre><code>*   e474ef4 Merge branch 'feature-b' into feature-a
 |\
-| * 5cd5e05 feat(parser): detect breaking changes ...
-* | 2d5a0e5 feat(renderer): group changelog entries ...
-* | 4c40e89 style: fix ruff findings ...
+| * e8e6801 feat(parser): detect breaking changes ...
+* | 53e20bd feat(renderer): group changelog entries ...
+* | 5dddc57 style: fix ruff findings ...
 |/
 * 53790a5 build: force LF line endings for shell scripts</code></pre>
   <ul>
@@ -144,7 +144,7 @@
   <h2>Доказательство 1: hook в работе</h2>
   <table>
     <tr><th>Момент</th><th>Что вернул hook</th></tr>
-    <tr><td>Запись фичи A</td><td>4 замечания ruff в <code>validate.py</code> и <code>server.py</code> (старые, на <code>main</code>) → исправлены коммитом <code>4c40e89</code></td></tr>
+    <tr><td>Запись фичи A</td><td>4 замечания ruff в <code>validate.py</code> и <code>server.py</code> (старые, на <code>main</code>) → исправлены коммитом <code>5dddc57</code></td></tr>
     <tr><td>Правка <code>validate.py</code></td><td>Оставшиеся 3 замечания в <code>server.py</code> (вывод до <code>ruff --fix</code>)</td></tr>
     <tr><td>Разрешение конфликта</td><td>13 ошибок <code>invalid-syntax</code>: в тесте остались маркеры <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code></td></tr>
   </table>

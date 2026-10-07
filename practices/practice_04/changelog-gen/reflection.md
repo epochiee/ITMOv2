@@ -13,17 +13,17 @@
 
 - **Фича A** (ветка `feature-a`): группировка записей по типу, секции Features / Fixes / Other, пустые секции не выводятся.
 - **Фича B** (worktree `../changelog-gen-b`, ветка `feature-b`): определение breaking changes по `!` и по футеру `BREAKING CHANGE:` / `BREAKING-CHANGE:`, отдельная секция Breaking Changes. CLI теперь читает полные сообщения коммитов, а не только заголовки.
-- **Слияние** `feature-b` в `feature-a` (коммит `42e3ff3`): конфликты в `renderer.py` и `tests/test_renderer.py`. Итоговый порядок секций: Breaking Changes, Features, Fixes, Other. Breaking-коммит не дублируется в секции своего типа.
-- **Release notes** сгенерированы skill'ом и закоммичены: `CHANGELOG.md` (`d9189fe`).
+- **Слияние** `feature-b` в `feature-a` (коммит `e474ef4`): конфликты в `renderer.py` и `tests/test_renderer.py`. Итоговый порядок секций: Breaking Changes, Features, Fixes, Other. Breaking-коммит не дублируется в секции своего типа.
+- **Release notes** сгенерированы skill'ом и закоммичены: `CHANGELOG.md` (`7a9ef17`).
 
 История `feature-a`:
 
 ```
-d9189fe docs: add changelog for 0.1.0
-42e3ff3 Merge branch 'feature-b' into feature-a
-5cd5e05 feat(parser): detect breaking changes and render a separate section   (feature-b)
-2d5a0e5 feat(renderer): group changelog entries by commit type
-4c40e89 style: fix ruff findings in validate script and MCP server
+7a9ef17 docs: add changelog for 0.1.0
+e474ef4 Merge branch 'feature-b' into feature-a
+e8e6801 feat(parser): detect breaking changes and render a separate section   (feature-b)
+53e20bd feat(renderer): group changelog entries by commit type
+5dddc57 style: fix ruff findings in validate script and MCP server
 ```
 
 Итог: 22 теста проходят (включая `tests/test_mcp_server.py` для MCP tool), `bash scripts/check.sh` завершается кодом 0.
@@ -34,7 +34,7 @@ d9189fe docs: add changelog for 0.1.0
 
 Три случая, во всех вывод hook вернулся агенту как blocking error:
 
-1. **Сбой после правок фичи A.** После `Write` файлов `renderer.py` и `test_renderer.py` hook вернул 4 замечания ruff в файлах, которых агент не трогал: SIM115 в `validate.py` и I001, RUF100 ×2 в `mcp_server/server.py`. Это не мой код, а старые замечания на `main`. Агент выяснил причину, исправил их отдельным коммитом `4c40e89` и добился кода 0.
+1. **Сбой после правок фичи A.** После `Write` файлов `renderer.py` и `test_renderer.py` hook вернул 4 замечания ruff в файлах, которых агент не трогал: SIM115 в `validate.py` и I001, RUF100 ×2 в `mcp_server/server.py`. Это не мой код, а старые замечания на `main`. Агент выяснил причину, исправил их отдельным коммитом `5dddc57` и добился кода 0.
 2. **Промежуточное состояние.** После `Edit` в `validate.py` hook показал оставшиеся 3 замечания в `server.py`. Это был вывод до `ruff --fix`, он пришёл с задержкой, а прямой запуск `check.sh` уже давал 0.
 3. **Конфликт слияния.** Во время разрешения конфликта hook на `Write` в `renderer.py` вернул 13 ошибок `invalid-syntax`: в `test_renderer.py` ещё оставались маркеры `<<<<<<<` и `>>>>>>>`. После правки второго файла проверка прошла.
 
@@ -69,7 +69,7 @@ d9189fe docs: add changelog for 0.1.0
 - **Проектный MCP.** Потребовались перезапуск сессии и одобрение сервера. Явной записи об одобрении в `.claude/settings.json` нет (`enabledMcpjsonServers` отсутствует), она хранится на уровне пользователя.
 - **Worktree без окружения.** В `changelog-gen-b` нет `.venv`. Решение: junction `mklink /J .venv ..\changelog-gen\.venv`; `ruff` и `pytest` через него работают.
 - **Ошибка агента при правке.** Первая попытка править `parser.py` и `cli.py` скриптом Python через heredoc испортила `parser.py` (`"\n"` превратился в реальный перевод строки, смешались окончания строк), а правка `cli.py` не применилась из-за CRLF. Файл был откачен через `git checkout`, правки переделаны штатным Edit. Вывод: для файлов с CRLF надёжнее структурные инструменты правки, чем самодельные скрипты.
-- **Старые замечания ruff на `main`.** Мой первый прогон `check.sh` («check ok») был сделан до того, как появились `scripts/validate.py` и `mcp_server/server.py`, поэтому он эти файлы не проверял. Закоммиченный `main` содержит в них 4 замечания ruff (SIM115, I001 и два RUF100); hook поймал их при первой же правке в фиче A, и они исправлены коммитом `4c40e89`. Ошибка была в моей проверке (я не перезапустил её после добавления файлов), а не в версии ruff. Следствие: ветка `feature-b`, отведённая от `main`, не проходит `check.sh` целиком, пока не слита с `feature-a` (см. `evidence/hook-worktree-fail.txt`).
+- **Старые замечания ruff на `main`.** Мой первый прогон `check.sh` («check ok») был сделан до того, как появились `scripts/validate.py` и `mcp_server/server.py`, поэтому он эти файлы не проверял. Закоммиченный `main` содержит в них 4 замечания ruff (SIM115, I001 и два RUF100); hook поймал их при первой же правке в фиче A, и они исправлены коммитом `5dddc57`. Ошибка была в моей проверке (я не перезапустил её после добавления файлов), а не в версии ruff. Следствие: ветка `feature-b`, отведённая от `main`, не проходит `check.sh` целиком, пока не слита с `feature-a` (см. `evidence/hook-worktree-fail.txt`).
 - **Ручной JSON-RPC тест MCP.** Ответ на ошибочный вызов не пришёл, потому что `head` закрыл конвейер раньше, чем сервер ответил. Заменено настоящим MCP-клиентом по stdio, а затем видеозаписью реального использования tool и skill (`evidence/mcp_skill_test.mp4`).
 - **Ошибка как данные, а не как исключение.** Tool возвращает `{"ok": false, "error": ...}` с `is_error=False`, поэтому клиент, смотрящий только на флаг ошибки, неверный ввод не заметит. Это осознанный выбор, но о нём нужно помнить.
 
@@ -93,7 +93,7 @@ d9189fe docs: add changelog for 0.1.0
 ## Ограничения hook и дополнения после ревизии
 
 - **Hook не видит правки через Bash.** Matcher `Edit|Write`: изменения скриптом или heredoc (так был испорчен `parser.py`) проверку не запускают. Расширять matcher на `Bash` не стал: полный ruff+pytest после каждой shell-команды слишком шумный. Вместо этого в `AGENTS.md` добавлено правило править файлы только Edit/Write.
-- **Hook проверяет весь репозиторий.** Старые замечания в чужих файлах блокируют работу (см. коммит `4c40e89`); сейчас `main` и `feature-a` чистые, но на новом проекте это придётся учитывать.
+- **Hook проверяет весь репозиторий.** Старые замечания в чужих файлах блокируют работу (см. коммит `5dddc57`); сейчас `main` и `feature-a` чистые, но на новом проекте это придётся учитывать.
 - **MCP-сервер раньше не имел тестов**, что нарушало правило `AGENTS.md`; добавлен `tests/test_mcp_server.py` (успех, ошибочный ввод, пустая строка).
 - **`CHANGELOG.md` отстал** от истории на 6 `docs`-коммитов; добавлена секция `0.1.1`, прошедшая `validate.py`.
 - **CRLF:** `.gitattributes` теперь задаёт LF для `*.py` и `*.md`, предупреждения git о замене окончаний строк должны исчезнуть.
