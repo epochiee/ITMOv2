@@ -1,0 +1,20 @@
+$ git log --format=%s feature-a
+docs: add presentation with links to project files
+docs: add practice reflection
+docs: add changelog for 0.1.0
+Merge branch 'feature-b' into feature-a
+feat(parser): detect breaking changes and render a separate section
+feat(renderer): group changelog entries by commit type
+style: fix ruff findings in validate script and MCP server
+build: force LF line endings for shell scripts
+feat: initial changelog-gen with parser, renderer and CLI
+
+$ validate.py CHANGELOG.md
+OK
+exit=0
+
+$ validate.py на заведомо плохом файле
+first line must be '## <version> — <YYYY-MM-DD>'
+empty section: Fixes
+2 problem(s)
+exit=1
