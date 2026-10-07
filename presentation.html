@@ -149,6 +149,10 @@
     <tr><td>Разрешение конфликта</td><td>13 ошибок <code>invalid-syntax</code>: в тесте остались маркеры <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code></td></tr>
   </table>
   <p class="muted">Hook видит состояние на момент вызова, поэтому при правке нескольких файлов подряд промежуточные сбои неизбежны.</p>
+  <ul>
+    <li>Причина старых замечаний: мой первый прогон <code>check.sh</code> был до появления <code>validate.py</code> и <code>server.py</code>, поэтому их не проверял.</li>
+    <li>Worktree: hook-команда с <code>CLAUDE_PROJECT_DIR</code> = <code>changelog-gen-b</code> на сломанном файле → код 2, <a href="evidence/hook-worktree-fail.txt">лог</a>. Основной каталог → код 0, <a href="evidence/hook-main-ok.txt">лог</a>.</li>
+  </ul>
 </section>
 
 <section class="slide">
@@ -161,7 +165,8 @@ parse_commit("update stuff")
   <ul>
     <li>Skill <code>release-notes</code> на истории проекта: тегов нет → весь <code>HEAD</code>, 6 коммитов.</li>
     <li>Распознано 5, не распознан 1 (merge-коммит). Валидатор: <code>OK</code>, код 0.</li>
-    <li>Результат: <a href="CHANGELOG.md">CHANGELOG.md</a>, коммит <code>d9189fe</code>.</li>
+    <li>Результат: <a href="CHANGELOG.md">CHANGELOG.md</a>; нераспознанный коммит теперь попадает в секцию <code>Not recognized</code>.</li>
+    <li>Логи: <a href="evidence/mcp-calls.txt">mcp-calls.txt</a> (клиент <a href="evidence/mcp_client.py">mcp_client.py</a>, успех и ошибка), <a href="evidence/skill-run.txt">skill-run.txt</a>, <a href="evidence/breaking-demo.txt">breaking-demo.txt</a> (секция Breaking Changes на репозитории с <code>!</code> и футером).</li>
   </ul>
 </section>
 
@@ -189,13 +194,12 @@ parse_commit("update stuff")
 </section>
 
 <section class="slide">
-  <h2>Что не доказано</h2>
+  <h2>Ограничения</h2>
   <ul>
-    <li><span class="warn">Hook в worktree:</span> сессия шла из основного каталога, в <code>changelog-gen-b</code> hook не срабатывал.</li>
+    <li><span class="warn">Hook в worktree</span> проверен прямым запуском его команды, а не живой сессией Claude Code в <code>changelog-gen-b</code>.</li>
     <li><span class="warn">Перечитывание AGENTS.md:</span> файл уже был в контексте, отдельных перечитываний нет.</li>
-    <li><span class="warn">Breaking в реальной истории:</span> секция проверена только тестами.</li>
-    <li><span class="warn">Расхождение:</span> на <code>main</code> <code>check.sh</code> падал на 4 замечаниях ruff, причину не выяснил.</li>
-    <li>Слабое место skill: в шаблоне нет секции для нераспознанных коммитов.</li>
+    <li><span class="warn">Подтверждения — логи команд</span> в <a href="evidence/">evidence/</a>, не скриншоты прошлых сессий.</li>
+    <li>MCP-tool возвращает ошибку данными (<code>ok: false</code>, <code>is_error=False</code>).</li>
   </ul>
   <p>Подробности: <a href="reflection.md">reflection.md</a>.</p>
 </section>

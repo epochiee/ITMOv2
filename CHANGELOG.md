@@ -8,3 +8,6 @@
 ### Other
 - fix ruff findings in validate script and MCP server
 - force LF line endings for shell scripts
+
+### Not recognized
+- Merge branch 'feature-b' into feature-a

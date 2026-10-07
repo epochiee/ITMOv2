@@ -11,3 +11,6 @@
 
 ### Other
 - <description>
+
+### Not recognized
+- <полная тема коммита, для которого parse_commit вернул ok: false>
