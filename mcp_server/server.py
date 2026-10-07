@@ -5,9 +5,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from mcp.server.mcpserver import MCPServer  # noqa: E402
+from mcp.server.mcpserver import MCPServer
 
-from changelog_gen.parser import CommitParseError, parse_commit as _parse  # noqa: E402
+from changelog_gen.parser import CommitParseError
+from changelog_gen.parser import parse_commit as _parse
 
 mcp = MCPServer("changelog-gen")
 

@@ -29,7 +29,8 @@ def validate(text: str) -> list[str]:
 
 
 if __name__ == "__main__":
-    problems = validate(open(sys.argv[1], encoding="utf-8").read())
+    with open(sys.argv[1], encoding="utf-8") as f:
+        problems = validate(f.read())
     for p in problems:
         print(p)
     print("OK" if not problems else f"{len(problems)} problem(s)")
