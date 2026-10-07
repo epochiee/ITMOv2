@@ -26,7 +26,7 @@ d9189fe docs: add changelog for 0.1.0
 4c40e89 style: fix ruff findings in validate script and MCP server
 ```
 
-Итог: 19 тестов проходят, `bash scripts/check.sh` завершается кодом 0.
+Итог: 22 теста проходят (включая `tests/test_mcp_server.py` для MCP tool), `bash scripts/check.sh` завершается кодом 0.
 
 ## Доказательства применения
 
@@ -89,6 +89,16 @@ d9189fe docs: add changelog for 0.1.0
 | Нет подтверждений | каталог `evidence/`, ссылки в `presentation.html` |
 | Нет breaking в реальной работе | `evidence/breaking-demo.txt`: CLI на репозитории с `!` и футером `BREAKING CHANGE:` показывает секцию Breaking Changes |
 | Слабое место skill | в `template.md` и `SKILL.md` добавлена секция `Not recognized`, она же в `CHANGELOG.md` |
+
+## Ограничения hook и дополнения после ревизии
+
+- **Hook не видит правки через Bash.** Matcher `Edit|Write`: изменения скриптом или heredoc (так был испорчен `parser.py`) проверку не запускают. Расширять matcher на `Bash` не стал: полный ruff+pytest после каждой shell-команды слишком шумный. Вместо этого в `AGENTS.md` добавлено правило править файлы только Edit/Write.
+- **Hook проверяет весь репозиторий.** Старые замечания в чужих файлах блокируют работу (см. коммит `4c40e89`); сейчас `main` и `feature-a` чистые, но на новом проекте это придётся учитывать.
+- **MCP-сервер раньше не имел тестов**, что нарушало правило `AGENTS.md`; добавлен `tests/test_mcp_server.py` (успех, ошибочный ввод, пустая строка).
+- **`CHANGELOG.md` отстал** от истории на 6 `docs`-коммитов; добавлена секция `0.1.1`, прошедшая `validate.py`.
+- **CRLF:** `.gitattributes` теперь задаёт LF для `*.py` и `*.md`, предупреждения git о замене окончаний строк должны исчезнуть.
+- **`changelog-gen-b/`** — остаток worktree с `.venv`-junction, добавлен в `.gitignore` внешнего репозитория.
+- **Не исправлено:** запись живой сессии, где агент сам загружает skill и проходит все шаги, у меня нет; задним числом её не создать. Для защиты это нужно показать вживую.
 
 ## Выводы
 
