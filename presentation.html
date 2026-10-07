@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>changelog-gen: практика 4</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1b1f24; --muted: #5b6672; --accent: #0b5fff;
+    --card: #f3f5f8; --border: #d8dde4; --ok: #137a3f; --warn: #a15c00; --code: #eef1f5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12161b; --fg: #e8ecf1; --muted: #9aa6b3; --accent: #6ea0ff;
+      --card: #1b2129; --border: #2f3844; --ok: #4cc27f; --warn: #e0a24a; --code: #232b35;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 18px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .slide {
+    display: none; min-height: 100vh; padding: 48px 8vw 96px;
+    flex-direction: column; justify-content: center; max-width: 1100px; margin: 0 auto;
+  }
+  .slide.active { display: flex; }
+  h1 { font-size: 2.4rem; margin: 0 0 .4em; line-height: 1.15; }
+  h2 { font-size: 1.8rem; margin: 0 0 .6em; }
+  p, li { color: var(--fg); }
+  .muted { color: var(--muted); }
+  a { color: var(--accent); }
+  code { background: var(--code); padding: .1em .35em; border-radius: 4px; font-size: .92em; }
+  pre { background: var(--code); padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: .85rem; line-height: 1.45; }
+  pre code { background: none; padding: 0; }
+  ul { padding-left: 1.2em; margin: .3em 0; }
+  li { margin: .35em 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 12px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .tag { display: inline-block; font-size: .75rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+  .ok { color: var(--ok); } .warn { color: var(--warn); }
+  nav {
+    position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 12px;
+    padding: 10px 8vw; background: var(--bg); border-top: 1px solid var(--border);
+  }
+  nav button {
+    font: inherit; color: var(--fg); background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 14px; cursor: pointer;
+  }
+  nav button:disabled { opacity: .4; cursor: default; }
+  nav .count { color: var(--muted); font-variant-numeric: tabular-nums; margin-left: auto; }
+  @media (max-width: 600px) {
+    body { font-size: 16px; }
+    .slide { padding: 32px 16px 96px; }
+    h1 { font-size: 1.8rem; } h2 { font-size: 1.4rem; }
+    nav { padding: 10px 16px; }
+  }
+  @media print {
+    .slide { display: flex !important; min-height: auto; page-break-after: always; }
+    nav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<section class="slide active">
+  <p class="muted">ИТМО · практика 4 · Claude Code</p>
+  <h1>changelog-gen: настройка среды агента и две фичи</h1>
+  <p>Утилита читает git-историю в формате Conventional Commits и печатает changelog. Сверху — среда для агента: правила, skill, MCP-сервер, hook.</p>
+  <p class="muted">Навигация: стрелки, пробел, Home/End. Ссылки ведут на файлы проекта (открывать из папки проекта).</p>
+</section>
+
+<section class="slide">
+  <h2>Среда агента</h2>
+  <div class="grid">
+    <div class="card"><h3>Правила</h3>
+      <p><a href="AGENTS.md">AGENTS.md</a>, <a href="CLAUDE.md">CLAUDE.md</a> (<code>@AGENTS.md</code>): команды, правила коммитов и тестов, критерий «готово».</p></div>
+    <div class="card"><h3>Skill</h3>
+      <p><a href=".claude/skills/release-notes/SKILL.md">release-notes</a>: <a href=".claude/skills/release-notes/template.md">template.md</a>, <a href=".claude/skills/release-notes/scripts/validate.py">validate.py</a>.</p></div>
+    <div class="card"><h3>MCP-сервер</h3>
+      <p><a href="mcp_server/server.py">server.py</a>, <a href=".mcp.json">.mcp.json</a>: tool <code>parse_commit</code> поверх <a href="src/changelog_gen/parser.py">parser.py</a>.</p></div>
+    <div class="card"><h3>Hook</h3>
+      <p><a href=".claude/settings.json">settings.json</a> → <a href="scripts/check.sh">check.sh</a>: ruff + pytest после каждого <code>Edit|Write</code>, при сбое код 2 и вывод агенту.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>Фича A: группировка по типам</h2>
+  <p>Ветка <code>feature-a</code>, коммит <code>2d5a0e5</code>. Код: <a href="src/changelog_gen/renderer.py">renderer.py</a>, тесты: <a href="tests/test_renderer.py">test_renderer.py</a>.</p>
+  <pre><code>## 1.0.0
+
+### Features
+
+- **api**: add x
+
+### Fixes
+
+- bug
+
+### Other
+
+- readme</code></pre>
+  <ul>
+    <li>Секции: Features (<code>feat</code>), Fixes (<code>fix</code>), Other (всё остальное).</li>
+    <li>Пустые секции не выводятся, порядок внутри секции сохраняется.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Фича B: breaking changes</h2>
+  <p>Worktree <code>../changelog-gen-b</code>, ветка <code>feature-b</code>, коммит <code>5cd5e05</code>.</p>
+  <ul>
+    <li><a href="src/changelog_gen/parser.py">parser.py</a>: <code>breaking</code> ставится по <code>!</code> и по футеру <code>BREAKING CHANGE:</code> / <code>BREAKING-CHANGE:</code>.</li>
+    <li><a href="src/changelog_gen/cli.py">cli.py</a>: читает полные сообщения (<code>%B%x00</code>), иначе футер не виден.</li>
+    <li><a href="src/changelog_gen/renderer.py">renderer.py</a>: отдельная секция Breaking Changes.</li>
+    <li>Тесты: <a href="tests/test_parser.py">test_parser.py</a>, <a href="tests/test_cli.py">test_cli.py</a>, <a href="tests/test_renderer.py">test_renderer.py</a>.</li>
+  </ul>
+  <p class="muted">Worktree не содержит <code>.venv</code>: подключён junction <code>mklink /J .venv ..\changelog-gen\.venv</code>.</p>
+</section>
+
+<section class="slide">
+  <h2>Слияние A и B</h2>
+  <p>Коммит <code>42e3ff3</code>. Конфликты в <code>renderer.py</code> и <code>tests/test_renderer.py</code>.</p>
+  <pre><code>*   42e3ff3 Merge branch 'feature-b' into feature-a
+|\
+| * 5cd5e05 feat(parser): detect breaking changes ...
+* | 2d5a0e5 feat(renderer): group changelog entries ...
+* | 4c40e89 style: fix ruff findings ...
+|/
+* 53790a5 build: force LF line endings for shell scripts</code></pre>
+  <ul>
+    <li>Порядок: Breaking Changes, Features, Fixes, Other.</li>
+    <li>Breaking-коммит не дублируется в секции своего типа.</li>
+    <li>Итог: 19 тестов, <code>bash scripts/check.sh</code> → код 0.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Доказательство 1: hook в работе</h2>
+  <table>
+    <tr><th>Момент</th><th>Что вернул hook</th></tr>
+    <tr><td>Запись фичи A</td><td>4 замечания ruff в <code>validate.py</code> и <code>server.py</code> (старые, на <code>main</code>) → исправлены коммитом <code>4c40e89</code></td></tr>
+    <tr><td>Правка <code>validate.py</code></td><td>Оставшиеся 3 замечания в <code>server.py</code> (вывод до <code>ruff --fix</code>)</td></tr>
+    <tr><td>Разрешение конфликта</td><td>13 ошибок <code>invalid-syntax</code>: в тесте остались маркеры <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code></td></tr>
+  </table>
+  <p class="muted">Hook видит состояние на момент вызова, поэтому при правке нескольких файлов подряд промежуточные сбои неизбежны.</p>
+</section>
+
+<section class="slide">
+  <h2>Доказательство 2: MCP и skill</h2>
+  <pre><code>parse_commit("feat(api)!: drop v1")
+  → {"ok": true, "type": "feat", "scope": "api", "description": "drop v1", "breaking": true}
+
+parse_commit("update stuff")
+  → {"ok": false, "error": "not a Conventional Commit header: 'update stuff'"}</code></pre>
+  <ul>
+    <li>Skill <code>release-notes</code> на истории проекта: тегов нет → весь <code>HEAD</code>, 6 коммитов.</li>
+    <li>Распознано 5, не распознан 1 (merge-коммит). Валидатор: <code>OK</code>, код 0.</li>
+    <li>Результат: <a href="CHANGELOG.md">CHANGELOG.md</a>, коммит <code>d9189fe</code>.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Доказательство 3: правила AGENTS.md</h2>
+  <table>
+    <tr><th>Правило</th><th>Применение</th></tr>
+    <tr><td>Не писать свой regex</td><td>разбор через <code>changelog_gen.parser</code> и MCP tool</td></tr>
+    <tr><td>Поведение → тест</td><td>тесты к A и B в <a href="tests/">tests/</a></td></tr>
+    <tr><td>Conventional Commits</td><td>все коммиты сессии</td></tr>
+    <tr><td>Ветки/worktree, без коммитов в <code>main</code></td><td><code>feature-a</code>, <code>feature-b</code>; <code>main</code> не менялся</td></tr>
+    <tr><td>«Готово» = <code>check.sh</code> с кодом 0</td><td>проверялось на каждом шаге</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>Трудности</h2>
+  <ul>
+    <li>Системный pip относился к Python 3.9 → <code>.venv</code> на 3.12.</li>
+    <li>В <code>mcp</code> 2.x <code>FastMCP</code> переименован в <code>MCPServer</code>; примеры в интернете устарели.</li>
+    <li>CRLF на Windows мог сломать <code>check.sh</code> → <a href=".gitattributes">.gitattributes</a>.</li>
+    <li>Проектный MCP потребовал перезапуска сессии и одобрения.</li>
+    <li>Ошибка агента: правка <code>parser.py</code> скриптом через heredoc испортила файл (CRLF, экранирование) → <code>git checkout</code> и правка штатным Edit.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Что не доказано</h2>
+  <ul>
+    <li><span class="warn">Hook в worktree:</span> сессия шла из основного каталога, в <code>changelog-gen-b</code> hook не срабатывал.</li>
+    <li><span class="warn">Перечитывание AGENTS.md:</span> файл уже был в контексте, отдельных перечитываний нет.</li>
+    <li><span class="warn">Breaking в реальной истории:</span> секция проверена только тестами.</li>
+    <li><span class="warn">Расхождение:</span> на <code>main</code> <code>check.sh</code> падал на 4 замечаниях ruff, причину не выяснил.</li>
+    <li>Слабое место skill: в шаблоне нет секции для нераспознанных коммитов.</li>
+  </ul>
+  <p>Подробности: <a href="reflection.md">reflection.md</a>.</p>
+</section>
+
+<section class="slide">
+  <h2>Выводы</h2>
+  <ul>
+    <li class="ok">Чёткий критерий «готово» в AGENTS.md дал агенту точку остановки.</li>
+    <li class="ok">Hook ловит реальные сбои, о которых агент иначе мог не узнать.</li>
+    <li class="ok">MCP-tool вместо regex: один источник правды для разбора коммитов.</li>
+    <li>Skill с валидатором даёт проверяемый результат, но качество зависит от шаблона.</li>
+    <li>Worktree изолирует код, но не окружение: <code>.venv</code> и hook настраиваются отдельно.</li>
+  </ul>
+</section>
+
+<nav>
+  <button id="prev" type="button">← Назад</button>
+  <button id="next" type="button">Вперёд →</button>
+  <span class="count" id="count"></span>
+</nav>
+
+<script>
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var prev = document.getElementById("prev");
+  var next = document.getElementById("next");
+  var count = document.getElementById("count");
+  var i = 0;
+  try {
+    var saved = parseInt(location.hash.replace("#", ""), 10);
+    if (saved >= 1 && saved <= slides.length) i = saved - 1;
+  } catch (e) {}
+
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, k) { s.classList.toggle("active", k === i); });
+    prev.disabled = i === 0;
+    next.disabled = i === slides.length - 1;
+    count.textContent = (i + 1) + " / " + slides.length;
+    history.replaceState(null, "", "#" + (i + 1));
+    window.scrollTo(0, 0);
+  }
+
+  prev.addEventListener("click", function () { show(i - 1); });
+  next.addEventListener("click", function () { show(i + 1); });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { e.preventDefault(); show(i + 1); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { e.preventDefault(); show(i - 1); }
+    else if (e.key === "Home") show(0);
+    else if (e.key === "End") show(slides.length - 1);
+  });
+  show(i);
+</script>
+</body>
+</html>
