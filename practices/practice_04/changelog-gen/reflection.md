@@ -75,7 +75,7 @@ d9189fe docs: add changelog for 0.1.0
 
 ## Что не доказано и ограничения
 
-- **Hook в worktree.** Сессия, в которой шла работа над B, была открыта в основном каталоге, поэтому хук в `changelog-gen-b` самим агентом не вызывался. Это закрыто прямым запуском hook-команды из `.claude/settings.json` (`bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"`) с `CLAUDE_PROJECT_DIR`, указывающим на worktree, на заведомо сломанном файле: код 2 и вывод ruff (`evidence/hook-worktree-fail.txt`); в основном каталоге та же команда даёт код 0 (`evidence/hook-main-ok.txt`). Это доказывает, что конфигурация работает в worktree, но не заменяет живую сессию Claude Code, открытую в `changelog-gen-b`.
+- **Hook в worktree.** Сессия, в которой шла работа над B, была открыта в основном каталоге, поэтому хук в `changelog-gen-b` самим агентом не вызывался. Это закрыто прямым запуском hook-команды из `.claude/settings.json` (`bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"`) с `CLAUDE_PROJECT_DIR`, указывающим на worktree, на заведомо сломанном файле: код 2 и вывод ruff (`evidence/hook-worktree-fail.txt`); в основном каталоге та же команда даёт код 0 (`evidence/hook-main-ok.txt`). Позже то же подтвердила живая сессия Claude Code, открытая в `changelog-gen-b` (ветка `feature-b`). Запись `scratch_broken.py` с `def broken(:` заблокировал hook: 6 замечаний ruff, из них 2 `invalid-syntax` от нового файла и 4 старых (SIM115, I001, RUF100 ×2, которые есть на `feature-b`, пока она не слита с `feature-a`). После замены содержимого на корректное осталось только 4 старых замечания. В той же сессии агент вызвал MCP tool `parse_commit` на `feat(api)!: drop v1`, `fix: handle empty log` и `update stuff`; ответы совпали с `evidence/mcp-calls.txt`. Ограничение: числовой код возврата в сессии не виден, агент получает лишь сообщение о блокирующей ошибке с выводом ruff, код 2 подтверждён только прямым запуском (`evidence/hook-worktree-fail.txt`). Подтверждением служит сводная таблица, составленная самим агентом; скриншоты сырых ответов нужно добавить отдельно.
 - **Перечитывание AGENTS.md.** Агент не перечитывал файл в процессе работы: он уже был в контексте с начала сессии. Ссылки на правила выше — это применение правил, а не отдельные чтения файла (одно чтение было по явной просьбе в начале фичи A).
 - **Подтверждения — это логи, а не скриншоты.** Каталог `evidence/` содержит вывод команд (hook, MCP-клиент, skill, breaking-демо), снятый при финальной проверке. Прошлые сессии с агентом задним числом заснять нельзя; их описание в этом отчёте — пересказ.
 - **Версия и дата.** Без тегов версию `0.1.0` пришлось взять из `pyproject.toml`.
@@ -85,7 +85,7 @@ d9189fe docs: add changelog for 0.1.0
 | Недочёт | Исправление |
 |---|---|
 | Неверное объяснение расхождения по ruff | см. «Старые замечания ruff на `main`» выше |
-| Hook в worktree не доказан | запуск hook-команды в worktree, `evidence/hook-worktree-fail.txt` |
+| Hook в worktree не доказан | запуск hook-команды в worktree (`evidence/hook-worktree-fail.txt`) и живая сессия в `changelog-gen-b` с блокировкой записи и последующим исправлением |
 | Нет подтверждений | каталог `evidence/`, ссылки в `presentation.html` |
 | Нет breaking в реальной работе | `evidence/breaking-demo.txt`: CLI на репозитории с `!` и футером `BREAKING CHANGE:` показывает секцию Breaking Changes |
 | Слабое место skill | в `template.md` и `SKILL.md` добавлена секция `Not recognized`, она же в `CHANGELOG.md` |

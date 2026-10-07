@@ -196,7 +196,8 @@ parse_commit("update stuff")
 <section class="slide">
   <h2>Ограничения</h2>
   <ul>
-    <li><span class="warn">Hook в worktree</span> проверен прямым запуском его команды, а не живой сессией Claude Code в <code>changelog-gen-b</code>.</li>
+    <li>Hook в worktree подтверждён живой сессией в <code>changelog-gen-b</code>: запись сломанного файла заблокирована (6 замечаний, из них 2 от нового файла), после исправления остались только 4 старых. Числового кода возврата агент не видит (он есть только в <a href="evidence/hook-worktree-fail.txt">прямом запуске</a>).</li>
+    <li><span class="warn">Подтверждение живой сессии</span> — сводка агента; скриншоты сырых ответов ещё нужно добавить.</li>
     <li><span class="warn">Перечитывание AGENTS.md:</span> файл уже был в контексте, отдельных перечитываний нет.</li>
     <li><span class="warn">Подтверждения — логи команд</span> в <a href="evidence/">evidence/</a>, не скриншоты прошлых сессий.</li>
     <li>MCP-tool возвращает ошибку данными (<code>ok: false</code>, <code>is_error=False</code>).</li>
