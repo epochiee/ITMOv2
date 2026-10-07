@@ -34,3 +34,24 @@ def test_render_keeps_order_within_section():
 
 def test_render_empty_list_has_only_header():
     assert render([], "1.0.0") == "## 1.0.0\n"
+
+
+def test_render_breaking_section_comes_first():
+    out = render(
+        [Commit("fix", None, "bug"), Commit("feat", "api", "drop v1", breaking=True)], "2.0.0"
+    )
+    assert out == (
+        "## 2.0.0\n\n"
+        "### Breaking Changes\n\n- **api**: drop v1\n\n"
+        "### Fixes\n\n- bug\n"
+    )
+
+
+def test_render_breaking_commit_is_not_duplicated_in_type_section():
+    out = render([Commit("feat", None, "drop v1", breaking=True)], "2.0.0")
+    assert out == "## 2.0.0\n\n### Breaking Changes\n\n- drop v1\n"
+    assert "Features" not in out
+
+
+def test_render_without_breaking_has_no_breaking_section():
+    assert "Breaking" not in render([Commit("fix", None, "bug")])

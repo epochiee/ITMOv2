@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 TYPES = ("feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore")
 
+_BREAKING_FOOTER = re.compile(r"^BREAKING[ -]CHANGE: \S", re.MULTILINE)
+
 _HEADER = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^()\s]+)\))?(?P<bang>!)?: (?P<desc>\S.*)$")
 
 
@@ -27,4 +29,6 @@ def parse_commit(message: str) -> Commit:
         raise CommitParseError(f"not a Conventional Commit header: {header!r}")
     if match["type"] not in TYPES:
         raise CommitParseError(f"unknown type {match['type']!r}, expected one of {', '.join(TYPES)}")
-    return Commit(match["type"], match["scope"], match["desc"], bool(match["bang"]))
+    body = message.strip().partition("\n")[2]
+    breaking = bool(match["bang"]) or bool(_BREAKING_FOOTER.search(body))
+    return Commit(match["type"], match["scope"], match["desc"], breaking)

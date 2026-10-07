@@ -7,18 +7,18 @@ from changelog_gen.parser import CommitParseError, parse_commit
 from changelog_gen.renderer import render
 
 
-def read_subjects(rev_range: str = "HEAD") -> list[str]:
+def read_messages(rev_range: str = "HEAD") -> list[str]:
     out = subprocess.run(
-        ["git", "log", "--format=%s", rev_range], capture_output=True, text=True, check=True
+        ["git", "log", "--format=%B%x00", rev_range], capture_output=True, text=True, check=True
     )
-    return [line for line in out.stdout.splitlines() if line]
+    return [m.strip() for m in out.stdout.split("\0") if m.strip()]
 
 
 def main() -> int:
     commits = []
-    for subject in read_subjects(sys.argv[1] if len(sys.argv) > 1 else "HEAD"):
+    for message in read_messages(sys.argv[1] if len(sys.argv) > 1 else "HEAD"):
         try:
-            commits.append(parse_commit(subject))
+            commits.append(parse_commit(message))
         except CommitParseError as exc:
             print(f"skip: {exc}", file=sys.stderr)
     sys.stdout.write(render(commits))
