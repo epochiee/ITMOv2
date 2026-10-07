@@ -197,7 +197,7 @@ parse_commit("update stuff")
   <h2>Ограничения</h2>
   <ul>
     <li>Hook в worktree подтверждён живой сессией в <code>changelog-gen-b</code>: запись сломанного файла заблокирована (6 замечаний, из них 2 от нового файла), после исправления остались только 4 старых. Числового кода возврата агент не видит (он есть только в <a href="evidence/hook-worktree-fail.txt">прямом запуске</a>).</li>
-    <li><span class="warn">Подтверждение живой сессии</span> — <a href="evidence/live_session.png">скриншот хода сессии</a> (правило применено, три вызова MCP, блокировка записи hook, исправление) и <a href="evidence/evidence_screen.png">сводная таблица агента</a>; сырые ответы MCP и полный вывод hook на скриншотах свёрнуты.</li>
+    <li><span class="warn">Подтверждение живой сессии</span> — <a href="evidence/live_session.png">скриншот хода сессии</a> (правило применено, три вызова MCP, блокировка записи hook, исправление) и <a href="evidence/evidence_screen.png">сводная таблица агента</a>. Сырые ответы MCP: <a href="evidence/used_4_tools.png">used_4_tools.png</a>. Запись и исправление файла в worktree: <a href="evidence/created_and_updated_py.png">created_and_updated_py.png</a>. Полного текста вывода ruff от hook в живой сессии на скриншотах нет (только пересказ агента); сырой вывод — в <a href="evidence/hook-worktree-fail.txt">прямом запуске</a>.</li>
     <li><span class="warn">Перечитывание AGENTS.md:</span> файл уже был в контексте, отдельных перечитываний нет.</li>
     <li><span class="warn">Подтверждения — логи команд</span> в <a href="evidence/">evidence/</a>, не скриншоты прошлых сессий.</li>
     <li>MCP-tool возвращает ошибку данными (<code>ok: false</code>, <code>is_error=False</code>).</li>
