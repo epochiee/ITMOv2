@@ -1,9 +1,0 @@
-tools: ['parse_commit']
-parse_commit('feat(api)!: drop v1') isError=False
-{"ok": true, "type": "feat", "scope": "api", "description": "drop v1", "breaking": true}
-parse_commit('fix: handle empty log') isError=False
-{"ok": true, "type": "fix", "scope": null, "description": "handle empty log", "breaking": false}
-parse_commit('update stuff') isError=False
-{"ok": false, "error": "not a Conventional Commit header: 'update stuff'"}
-parse_commit('') isError=False
-{"ok": false, "error": "not a Conventional Commit header: ''"}
