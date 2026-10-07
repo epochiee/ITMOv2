@@ -1,0 +1,58 @@
+Прогон skill release-notes (секция 0.3.0), живая сессия в песочнице. Тайм-коды не включены.
+
+=== Шаг 1. Диапазон ===
+$ git describe --tags --abbrev=0
+v0.2.0
+$ git rev-parse v0.2.0
+6fd7e98bd1fc7223e078908615f414431942a804
+Диапазон: v0.2.0..HEAD (5 коммитов)
+
+=== Шаг 2. Темы коммитов (git log --format=%s v0.2.0..HEAD) ===
+wip stuff
+docs(changelog): document --title flag under Unreleased
+test(cli): cover --title flag and skipping of invalid subjects
+feat(cli): add --title flag to replace the changelog heading
+chore: add legacy leftover import
+
+=== Шаг 3. parse_commit по каждой теме ===
+Сырые ответы: см. run-mcp.txt, раздел «Фаза D».
+Распознано: 4 (docs, test, feat, chore). Не распознано: 1 (wip stuff, ok: false).
+
+=== Шаг 4. Новая секция (new_section.md) ===
+## 0.3.0 — 2026-10-07
+
+### Features
+- **cli**: add --title flag to replace the changelog heading
+
+### Other
+- **changelog**: document --title flag under Unreleased
+- **cli**: cover --title flag and skipping of invalid subjects
+- add legacy leftover import
+
+### Not recognized
+- wip stuff
+
+=== Шаг 5. Валидатор ===
+$ .venv/Scripts/python .claude/skills/release-notes/scripts/validate.py new_section.md; echo "exit=$?"
+OK
+exit=0
+
+=== Проверка, что валидатор ловит ошибку (секция с пустым разделом Features) ===
+bad_section.md:
+## 0.3.0 — 2026-10-07
+
+### Features
+
+### Other
+- x
+
+$ .venv/Scripts/python .claude/skills/release-notes/scripts/validate.py bad_section.md; echo "exit=$?"
+empty section: Features
+1 problem(s)
+exit=1
+
+=== Шаг 6. Запись в CHANGELOG.md и итоговая проверка ===
+Раздел "## Unreleased" (добавленный docs-коммитом) заменён на "## 0.3.0 — 2026-10-07", чтобы записи не задвоились.
+$ bash scripts/check.sh; echo "exit=$?"
+check ok
+exit=0

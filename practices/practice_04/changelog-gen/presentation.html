@@ -34,15 +34,14 @@
   code { background: var(--code); padding: .1em .35em; border-radius: 4px; font-size: .92em; }
   pre { background: var(--code); padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: .85rem; line-height: 1.45; }
   pre code { background: none; padding: 0; }
-  ul { padding-left: 1.2em; margin: .3em 0; }
+  ul, ol { padding-left: 1.2em; margin: .3em 0; }
   li { margin: .35em 0; }
-  table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .9rem; margin: .4em 0; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { color: var(--muted); font-weight: 600; }
   .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 12px; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
   .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
-  .tag { display: inline-block; font-size: .75rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
   .ok { color: var(--ok); } .warn { color: var(--warn); }
   nav {
     position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 12px;
@@ -59,6 +58,7 @@
     .slide { padding: 32px 16px 96px; }
     h1 { font-size: 1.8rem; } h2 { font-size: 1.4rem; }
     nav { padding: 10px 16px; }
+    table { display: block; overflow-x: auto; }
   }
   @media print {
     .slide { display: flex !important; min-height: auto; page-break-after: always; }
@@ -70,8 +70,15 @@
 
 <section class="slide active">
   <p class="muted">ИТМО · практика 4 · Claude Code</p>
-  <h1>changelog-gen: настройка среды агента и две фичи</h1>
-  <p>Утилита читает git-историю в формате Conventional Commits и печатает changelog. Сверху — среда для агента: правила, skill, MCP-сервер, hook.</p>
+  <h1>changelog-gen: среда агента, skill и собственный MCP</h1>
+  <p>Утилита читает git-историю в формате Conventional Commits и печатает changelog. Вокруг неё настроена среда для агента: правила, skill, MCP-сервер и hook.</p>
+  <table>
+    <tr><th>Пункт задания</th><th>Слайд</th></tr>
+    <tr><td>Среда: правила, skill, MCP, hook, зачем они нужны</td><td>2–5, 9</td></tr>
+    <tr><td>Skill: устройство, запуск, проверенный результат</td><td>6–7</td></tr>
+    <tr><td>Собственный MCP: успех и ошибочный вход</td><td>5</td></tr>
+    <tr><td>Рефлексия, трудности, ограничения</td><td>10–13, <a href="reflection.md">reflection.md</a></td></tr>
+  </table>
   <p class="muted">Навигация: стрелки, пробел, Home/End. Ссылки ведут на файлы проекта (открывать из папки проекта).</p>
 </section>
 
@@ -79,53 +86,95 @@
   <h2>Среда агента</h2>
   <div class="grid">
     <div class="card"><h3>Правила</h3>
-      <p><a href="AGENTS.md">AGENTS.md</a>, <a href="CLAUDE.md">CLAUDE.md</a> (<code>@AGENTS.md</code>): команды, правила коммитов и тестов, критерий «готово».</p></div>
+      <p><a href="AGENTS.md">AGENTS.md</a>, <a href="CLAUDE.md">CLAUDE.md</a> (<code>@AGENTS.md</code>): структура, команды, правила коммитов и тестов, критерий «готово».</p></div>
     <div class="card"><h3>Skill</h3>
       <p><a href=".claude/skills/release-notes/SKILL.md">release-notes</a>: <a href=".claude/skills/release-notes/template.md">template.md</a>, <a href=".claude/skills/release-notes/scripts/validate.py">validate.py</a>.</p></div>
     <div class="card"><h3>MCP-сервер</h3>
       <p><a href="mcp_server/server.py">server.py</a>, <a href=".mcp.json">.mcp.json</a>: tool <code>parse_commit</code> поверх <a href="src/changelog_gen/parser.py">parser.py</a>.</p></div>
     <div class="card"><h3>Hook</h3>
-      <p><a href=".claude/settings.json">settings.json</a> → <a href="scripts/check.sh">check.sh</a>: ruff + pytest после каждого <code>Edit|Write</code>, при сбое код 2 и вывод агенту.</p></div>
+      <p><a href=".claude/settings.json">settings.json</a> → <a href="scripts/check.sh">check.sh</a>: ruff + pytest после каждого <code>Edit|Write</code>; при сбое код 2 и вывод возвращаются агенту.</p></div>
   </div>
+  <p class="muted">Единая точка проверки — <code>bash scripts/check.sh</code>: её запускает hook, она же критерий «готово» в <code>AGENTS.md</code>.</p>
 </section>
 
 <section class="slide">
-  <h2>Фича A: группировка по типам</h2>
-  <p>Ветка <code>feature-a</code>, коммит <code>53e20bd</code>. Код: <a href="src/changelog_gen/renderer.py">renderer.py</a>, тесты: <a href="tests/test_renderer.py">test_renderer.py</a>.</p>
-  <pre><code>## 1.0.0
+  <h2>Правила AGENTS.md в работе</h2>
+  <table>
+    <tr><th>Правило</th><th>Как применено</th></tr>
+    <tr><td>Не писать свой regex для коммитов</td><td>разбор через <code>changelog_gen.parser</code> и MCP tool; агент вызвал <code>parse_commit</code> на каждой теме (<a href="evidence/run-mcp.txt">run-mcp.txt</a>)</td></tr>
+    <tr><td>Поведение → тест</td><td>тесты к A, B и MCP-tool в <a href="tests/">tests/</a>, всего 22</td></tr>
+    <tr><td>Conventional Commits, по-английски</td><td>все коммиты сессий</td></tr>
+    <tr><td>Править файлы только через Edit/Write</td><td>hook не видит правки через Bash; правило добавлено после порчи <code>parser.py</code> скриптом</td></tr>
+    <tr><td>Ветки/worktree, без коммитов в <code>main</code></td><td><code>feature-a</code>, <code>feature-b</code>; <code>main</code> не менялся</td></tr>
+    <tr><td>«Готово» = <code>check.sh</code> с кодом 0</td><td>проверялось на каждом шаге</td></tr>
+  </table>
+  <p class="muted">Файл подгружается в контекст автоматически через <code>CLAUDE.md</code>; отдельных перечитываний агент не делал.</p>
+</section>
 
-### Features
-
-- **api**: add x
-
-### Fixes
-
-- bug
-
-### Other
-
-- readme</code></pre>
+<section class="slide">
+  <h2>Hook: проверка после каждой правки</h2>
+  <p>Matcher <code>Edit|Write</code>, команда <code>bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"</code>. Код 2 и stderr при сбое попадают агенту как blocking error.</p>
+  <table>
+    <tr><th>Момент</th><th>Что вернул hook</th></tr>
+    <tr><td>Фича A, запись файлов</td><td>4 старых замечания ruff в <code>validate.py</code> и <code>server.py</code> → исправлены коммитом <code>5dddc57</code></td></tr>
+    <tr><td>Разрешение конфликта слияния</td><td>13 ошибок <code>invalid-syntax</code>: в тесте остались маркеры <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code></td></tr>
+    <tr><td>Песочница: <code>--title</code>, правка <code>cli.py</code></td><td>2 × <code>F821</code> (<code>import argparse</code> ещё не добавлен) + <code>F401</code> (заложенный долг); затем только <code>F401</code>; после уборки → код 0. Дословно: <a href="evidence/run-hook.txt">run-hook.txt</a></td></tr>
+  </table>
   <ul>
-    <li>Секции: Features (<code>feat</code>), Fixes (<code>fix</code>), Other (всё остальное).</li>
-    <li>Пустые секции не выводятся, порядок внутри секции сохраняется.</li>
+    <li>Hook видит состояние на момент вызова, поэтому при правке нескольких файлов подряд промежуточные сбои неизбежны.</li>
+    <li>Проверяется весь репозиторий: старый долг блокирует любую правку, пока его не уберут.</li>
+    <li>В worktree: прямой запуск команды с <code>CLAUDE_PROJECT_DIR</code> на сломанном файле → код 2 (<a href="evidence/hook-worktree-fail.txt">лог</a>), в основном каталоге → код 0 (<a href="evidence/hook-main-ok.txt">лог</a>).</li>
   </ul>
 </section>
 
 <section class="slide">
-  <h2>Фича B: breaking changes</h2>
-  <p>Worktree <code>../changelog-gen-b</code>, ветка <code>feature-b</code>, коммит <code>e8e6801</code>.</p>
+  <h2>Собственный MCP: tool parse_commit</h2>
+  <pre><code>parse_commit("feat(api)!: drop v1")
+  → {"ok": true, "type": "feat", "scope": "api", "description": "drop v1", "breaking": true}
+
+parse_commit("update stuff")
+  → {"ok": false, "error": "not a Conventional Commit header: 'update stuff'"}</code></pre>
   <ul>
-    <li><a href="src/changelog_gen/parser.py">parser.py</a>: <code>breaking</code> ставится по <code>!</code> и по футеру <code>BREAKING CHANGE:</code> / <code>BREAKING-CHANGE:</code>.</li>
-    <li><a href="src/changelog_gen/cli.py">cli.py</a>: читает полные сообщения (<code>%B%x00</code>), иначе футер не виден.</li>
-    <li><a href="src/changelog_gen/renderer.py">renderer.py</a>: отдельная секция Breaking Changes.</li>
-    <li>Тесты: <a href="tests/test_parser.py">test_parser.py</a>, <a href="tests/test_cli.py">test_cli.py</a>, <a href="tests/test_renderer.py">test_renderer.py</a>.</li>
+    <li>Код: <a href="mcp_server/server.py">server.py</a>; подключение: <a href=".mcp.json">.mcp.json</a>. Tool оборачивает <code>changelog_gen.parser</code>, поэтому разбор один и для кода, и для skill.</li>
+    <li>Сырые ответы агента, включая два <code>ok: false</code> (<code>update stuff</code>, <code>wip stuff</code>): <a href="evidence/run-mcp.txt">run-mcp.txt</a>.</li>
+    <li>Тесты: <a href="tests/test_mcp_server.py">test_mcp_server.py</a> (успех, ошибочный ввод, пустая строка).</li>
+    <li class="warn">Ошибка возвращается данными (<code>is_error=False</code>): клиент, смотрящий только на флаг, неверный ввод не заметит. Это осознанный выбор.</li>
   </ul>
-  <p class="muted">Worktree не содержит <code>.venv</code>: подключён junction <code>mklink /J .venv ..\changelog-gen\.venv</code>.</p>
 </section>
 
 <section class="slide">
-  <h2>Слияние A и B</h2>
-  <p>Коммит <code>e474ef4</code>. Конфликты в <code>renderer.py</code> и <code>tests/test_renderer.py</code>.</p>
+  <h2>Skill release-notes: устройство</h2>
+  <ol>
+    <li>Диапазон: от последнего тега, иначе от коммита, последним менявшего <code>CHANGELOG.md</code>, иначе весь <code>HEAD</code>.</li>
+    <li><code>git log --format=%s &lt;range&gt;</code>.</li>
+    <li>MCP <code>parse_commit</code> на каждую тему; <code>ok: false</code> запоминается.</li>
+    <li>Группировка: Breaking, Features, Fixes, Other; нераспознанное → <code>Not recognized</code>. Оформление по <a href=".claude/skills/release-notes/template.md">template.md</a>.</li>
+    <li><a href=".claude/skills/release-notes/scripts/validate.py">validate.py</a> на новой секции: заголовок версии, непустые разделы, нет дублей.</li>
+    <li>Запись сверху <a href="CHANGELOG.md">CHANGELOG.md</a> и <code>check.sh</code>.</li>
+  </ol>
+  <p class="muted">Файл: <a href=".claude/skills/release-notes/SKILL.md">SKILL.md</a>. Валидатор проверяет только структуру, а не соответствие истории.</p>
+</section>
+
+<section class="slide">
+  <h2>Skill: запуск и результат</h2>
+  <ul>
+    <li><b>Первый прогон</b> (история проекта): тегов нет → весь <code>HEAD</code>, 6 коммитов, 5 распознано, 1 нет (merge-коммит). Валидатор <code>OK</code>. Результат — секция <code>0.1.0</code> в <a href="CHANGELOG.md">CHANGELOG.md</a>.</li>
+    <li><b>Найденный дефект:</b> без тегов skill брал весь <code>HEAD</code>, и секция <code>0.2.0</code> задвоила записи <code>0.1.0</code>. Диапазон исправлен в <code>SKILL.md</code>, секция сокращена; валидатор проверяют только на новой секции.</li>
+    <li><b>Песочница</b> (тег <code>v0.2.0</code>, фича <code>--title</code>): диапазон <code>v0.2.0..HEAD</code>, 5 коммитов, <code>wip stuff</code> попал в <code>Not recognized</code>, валидатор: <code>OK</code> (код 0) и отказ на файле с пустой секцией (код 1). Лог: <a href="evidence/run-skill.txt">run-skill.txt</a>.</li>
+    <li>Раздел <code>Not recognized</code> появился после первого прогона, когда нераспознанный merge-коммит терялся.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>Две фичи: A, B и слияние</h2>
+  <div class="grid">
+    <div class="card"><h3>A: группировка по типам</h3>
+      <p>Ветка <code>feature-a</code>, <code>53e20bd</code>. Секции Features / Fixes / Other, пустые не выводятся. <a href="src/changelog_gen/renderer.py">renderer.py</a>, <a href="tests/test_renderer.py">тесты</a>.</p></div>
+    <div class="card"><h3>B: breaking changes</h3>
+      <p>Worktree, ветка <code>feature-b</code>, <code>e8e6801</code>. <code>!</code> и футер <code>BREAKING CHANGE:</code>; CLI читает полные сообщения. <a href="src/changelog_gen/parser.py">parser.py</a>, <a href="src/changelog_gen/cli.py">cli.py</a>, <a href="tests/test_parser.py">тесты</a>.</p></div>
+    <div class="card"><h3>Слияние</h3>
+      <p><code>e474ef4</code>, конфликты в <code>renderer.py</code> и тесте. Порядок: Breaking, Features, Fixes, Other; breaking не дублируется. <a href="evidence/breaking-demo.txt">breaking-demo.txt</a>.</p></div>
+  </div>
   <pre><code>*   e474ef4 Merge branch 'feature-b' into feature-a
 |\
 | * e8e6801 feat(parser): detect breaking changes ...
@@ -133,74 +182,57 @@
 * | 5dddc57 style: fix ruff findings ...
 |/
 * 53790a5 build: force LF line endings for shell scripts</code></pre>
-  <ul>
-    <li>Порядок: Breaking Changes, Features, Fixes, Other.</li>
-    <li>Breaking-коммит не дублируется в секции своего типа.</li>
-    <li>Итог: 19 тестов, <code>bash scripts/check.sh</code> → код 0.</li>
-  </ul>
+  <p class="muted">Worktree без <code>.venv</code>: подключался junction <code>mklink /J</code>. Позже каталог worktree убран при чистке, остались логи и скриншоты.</p>
 </section>
 
 <section class="slide">
-  <h2>Доказательство 1: hook в работе</h2>
+  <h2>Зачем выбраны подключения</h2>
   <table>
-    <tr><th>Момент</th><th>Что вернул hook</th></tr>
-    <tr><td>Запись фичи A</td><td>4 замечания ruff в <code>validate.py</code> и <code>server.py</code> (старые, на <code>main</code>) → исправлены коммитом <code>5dddc57</code></td></tr>
-    <tr><td>Правка <code>validate.py</code></td><td>Оставшиеся 3 замечания в <code>server.py</code> (вывод до <code>ruff --fix</code>)</td></tr>
-    <tr><td>Разрешение конфликта</td><td>13 ошибок <code>invalid-syntax</code>: в тесте остались маркеры <code>&lt;&lt;&lt;&lt;&lt;&lt;&lt;</code></td></tr>
-  </table>
-  <p class="muted">Hook видит состояние на момент вызова, поэтому при правке нескольких файлов подряд промежуточные сбои неизбежны.</p>
-  <ul>
-    <li>Причина старых замечаний: мой первый прогон <code>check.sh</code> был до появления <code>validate.py</code> и <code>server.py</code>, поэтому их не проверял.</li>
-    <li>Worktree: hook-команда с <code>CLAUDE_PROJECT_DIR</code> = <code>changelog-gen-b</code> на сломанном файле → код 2, <a href="evidence/hook-worktree-fail.txt">лог</a>. Основной каталог → код 0, <a href="evidence/hook-main-ok.txt">лог</a>.</li>
-  </ul>
-</section>
-
-<section class="slide">
-  <h2>Доказательство 2: MCP и skill</h2>
-  <pre><code>parse_commit("feat(api)!: drop v1")
-  → {"ok": true, "type": "feat", "scope": "api", "description": "drop v1", "breaking": true}
-
-parse_commit("update stuff")
-  → {"ok": false, "error": "not a Conventional Commit header: 'update stuff'"}</code></pre>
-  <ul>
-    <li>Skill <code>release-notes</code> на истории проекта: тегов нет → весь <code>HEAD</code>, 6 коммитов.</li>
-    <li>Распознано 5, не распознан 1 (merge-коммит). Валидатор: <code>OK</code>, код 0.</li>
-    <li>Результат: <a href="CHANGELOG.md">CHANGELOG.md</a>; нераспознанный коммит теперь попадает в секцию <code>Not recognized</code>.</li>
-    <li>Видео использования skill и MCP (успешный и ошибочный вызов): <a href="evidence/mcp_skill_test.mp4">mcp_skill_test.mp4</a>. Дополнительно: <a href="evidence/breaking-demo.txt">breaking-demo.txt</a> (секция Breaking Changes на репозитории с <code>!</code> и футером). Тесты tool: <a href="tests/test_mcp_server.py">test_mcp_server.py</a>.</li>
-  </ul>
-</section>
-
-<section class="slide">
-  <h2>Доказательство 3: правила AGENTS.md</h2>
-  <table>
-    <tr><th>Правило</th><th>Применение</th></tr>
-    <tr><td>Не писать свой regex</td><td>разбор через <code>changelog_gen.parser</code> и MCP tool</td></tr>
-    <tr><td>Поведение → тест</td><td>тесты к A и B в <a href="tests/">tests/</a></td></tr>
-    <tr><td>Conventional Commits</td><td>все коммиты сессии</td></tr>
-    <tr><td>Ветки/worktree, без коммитов в <code>main</code></td><td><code>feature-a</code>, <code>feature-b</code>; <code>main</code> не менялся</td></tr>
-    <tr><td>«Готово» = <code>check.sh</code> с кодом 0</td><td>проверялось на каждом шаге</td></tr>
+    <tr><th>Подключение</th><th>Шаг задачи</th><th>Что дало</th><th>Без него</th></tr>
+    <tr><td><code>AGENTS.md</code></td><td>постановка и завершение</td><td>правило про MCP вместо regex, обязательные тесты, «готово» = <code>check.sh</code></td><td>правила в каждом промпте</td></tr>
+    <tr><td>MCP <code>parse_commit</code></td><td>разбор коммитов, сборка release notes</td><td>один источник правды; <code>ok: false</code> на плохих темах</td><td>свой regex и расхождения с <code>parser.py</code></td></tr>
+    <tr><td>Hook</td><td>правка кода и тестов</td><td>поймал недописанный импорт, старый долг и маркеры конфликта в момент правки</td><td>сбой всплыл бы только в конце</td></tr>
+    <tr><td>Skill + валидатор</td><td>выпуск релиза</td><td>диапазон, группировка, <code>Not recognized</code>, проверка структуры</td><td>ручная сборка, потерянные коммиты</td></tr>
   </table>
 </section>
 
 <section class="slide">
-  <h2>Трудности</h2>
+  <h2>Подтверждения</h2>
+  <table>
+    <tr><th>Файл</th><th>Что показывает</th><th>Тип</th></tr>
+    <tr><td><a href="evidence/run-hook.txt">run-hook.txt</a></td><td>три блокировки hook дословно</td><td>лог сессии</td></tr>
+    <tr><td><a href="evidence/run-mcp.txt">run-mcp.txt</a></td><td>сырые ответы <code>parse_commit</code>, успех и ошибка</td><td>лог сессии</td></tr>
+    <tr><td><a href="evidence/run-skill.txt">run-skill.txt</a></td><td>шаги skill, валидатор OK и отказ</td><td>лог сессии</td></tr>
+    <tr><td><a href="evidence/run-sandbox-git.txt">run-sandbox-git.txt</a></td><td>коммиты, diff, <code>check.sh</code> код 0, 25 тестов</td><td>лог команд</td></tr>
+    <tr><td><a href="evidence/live_session.png">live_session.png</a>, <a href="evidence/created_and_updated_py.png">created_and_updated_py.png</a></td><td>правило применено, вызовы MCP, блокировка записи hook и исправление</td><td>скриншоты</td></tr>
+    <tr><td><a href="evidence/mcp_skill_test.mp4">mcp_skill_test.mp4</a></td><td>использование skill и MCP</td><td>видео</td></tr>
+    <tr><td><a href="evidence/hook-worktree-fail.txt">hook-worktree-fail.txt</a>, <a href="evidence/hook-main-ok.txt">hook-main-ok.txt</a></td><td>hook в worktree: код 2 и код 0</td><td>прямой запуск</td></tr>
+  </table>
+  <p class="muted">Логи <code>run-*</code> собраны в песочнице, без тайм-кодов; долг линтера в ней заложен заранее. Сессии над фичами A и B пересказаны в <a href="reflection.md">reflection.md</a>, а не засняты.</p>
+</section>
+
+<section class="slide">
+  <h2>Трудности и вмешательства</h2>
   <ul>
     <li>Системный pip относился к Python 3.9 → <code>.venv</code> на 3.12.</li>
     <li>В <code>mcp</code> 2.x <code>FastMCP</code> переименован в <code>MCPServer</code>; примеры в интернете устарели.</li>
-    <li>CRLF на Windows мог сломать <code>check.sh</code> → <a href=".gitattributes">.gitattributes</a>.</li>
+    <li>CRLF на Windows мог сломать <code>check.sh</code> → <a href=".gitattributes">.gitattributes</a> (LF для <code>*.sh</code>, <code>*.py</code>, <code>*.md</code>).</li>
     <li>Проектный MCP потребовал перезапуска сессии и одобрения.</li>
-    <li>Ошибка агента: правка <code>parser.py</code> скриптом через heredoc испортила файл (CRLF, экранирование) → <code>git checkout</code> и правка штатным Edit.</li>
+    <li>Агент испортил <code>parser.py</code> правкой скриптом через heredoc → <code>git checkout</code>, правка штатным Edit и правило в <code>AGENTS.md</code>.</li>
+    <li>Мой первый прогон <code>check.sh</code> не видел новых файлов → старые замечания ruff всплыли в hook.</li>
+    <li>По итогам ревизии: добавлен тест MCP-сервера, обновлён <code>CHANGELOG.md</code>, исправлен диапазон в skill.</li>
   </ul>
 </section>
 
 <section class="slide">
   <h2>Ограничения</h2>
   <ul>
-    <li>Hook в worktree подтверждён живой сессией в <code>changelog-gen-b</code>: запись сломанного файла заблокирована (6 замечаний, из них 2 от нового файла), после исправления остались только 4 старых. Числового кода возврата агент не видит (он есть только в <a href="evidence/hook-worktree-fail.txt">прямом запуске</a>).</li>
-    <li><span class="warn">Подтверждение живой сессии</span> — <a href="evidence/live_session.png">скриншот хода сессии</a> (правило применено, три вызова MCP, блокировка записи hook, исправление). Запись и исправление файла в worktree: <a href="evidence/created_and_updated_py.png">created_and_updated_py.png</a>. Полного текста вывода ruff от hook в живой сессии на скриншотах нет (только пересказ агента); сырой вывод — в <a href="evidence/hook-worktree-fail.txt">прямом запуске</a>.</li>
-    <li><span class="warn">Перечитывание AGENTS.md:</span> файл уже был в контексте, отдельных перечитываний нет.</li>
-    <li>Подтверждения в <a href="evidence/">evidence/</a>: видео работы skill и MCP, скриншоты живой сессии с hook и логи hook. Прошлые сессии над фичами A и B пересказаны в отчёте, а не засняты.</li>
-    <li>MCP-tool возвращает ошибку данными (<code>ok: false</code>, <code>is_error=False</code>).</li>
+    <li>Hook не видит правки через Bash; matcher не расширен (слишком шумно), вместо этого правило в <code>AGENTS.md</code>.</li>
+    <li>Числовой код возврата hook в сессии не виден; код 2 подтверждён только прямым запуском.</li>
+    <li>Фича <code>--title</code> и 25 тестов есть только в песочнице; в проекте 22 теста.</li>
+    <li>Загрузка skill как отдельного вызова в логах не видна; цитата правил <code>AGENTS.md</code> отдельным файлом не сохранена.</li>
+    <li>Видео снято раньше песочницы и текстовыми логами не подтверждается.</li>
+    <li>Валидатор проверяет структуру, а не соответствие истории.</li>
   </ul>
   <p>Подробности: <a href="reflection.md">reflection.md</a>.</p>
 </section>
@@ -208,10 +240,10 @@ parse_commit("update stuff")
 <section class="slide">
   <h2>Выводы</h2>
   <ul>
-    <li class="ok">Чёткий критерий «готово» в AGENTS.md дал агенту точку остановки.</li>
-    <li class="ok">Hook ловит реальные сбои, о которых агент иначе мог не узнать.</li>
+    <li class="ok">Чёткий критерий «готово» в <code>AGENTS.md</code> дал агенту точку остановки.</li>
+    <li class="ok">Hook ловит реальные сбои в момент правки, но видит только состояние на этот момент.</li>
     <li class="ok">MCP-tool вместо regex: один источник правды для разбора коммитов.</li>
-    <li>Skill с валидатором даёт проверяемый результат, но качество зависит от шаблона.</li>
+    <li>Skill с валидатором даёт проверяемый результат, но качество зависит от шаблона и правила диапазона.</li>
     <li>Worktree изолирует код, но не окружение: <code>.venv</code> и hook настраиваются отдельно.</li>
   </ul>
 </section>
