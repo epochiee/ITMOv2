@@ -173,3 +173,7 @@ student_solutions/
 !.roo/
 !.specify/
 !.vscode/
+
+# leftover git worktree of feature-b (practice_04 evidence)
+practices/practice_04/changelog-gen-b/
+practices/practice_04/changelog-gen-exp/

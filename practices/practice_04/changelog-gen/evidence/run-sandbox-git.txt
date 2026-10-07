@@ -1,0 +1,87 @@
+История и результат повторного эксперимента в чистой песочнице changelog-gen-exp (снято командами ниже после сессии).
+Базовое состояние: 6fd7e98 (тег v0.2.0) и 1f61bcf (заложенный долг линтера: лишний import os).
+
+$ git log --stat --format="== %h %s" v0.2.0..HEAD
+== dc58a57 wip stuff
+== 4be70dc docs(changelog): document --title flag under Unreleased
+
+ CHANGELOG.md | 5 +++++
+ 1 file changed, 5 insertions(+)
+== 850639a test(cli): cover --title flag and skipping of invalid subjects
+
+ tests/test_cli.py | 38 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+== 154abc5 feat(cli): add --title flag to replace the changelog heading
+
+ src/changelog_gen/cli.py | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+== 1f61bcf chore: add legacy leftover import
+
+ src/changelog_gen/cli.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+$ git diff 1f61bcf HEAD -- src/changelog_gen/cli.py
+diff --git a/src/changelog_gen/cli.py b/src/changelog_gen/cli.py
+index 02a93d7..fa5f4ba 100644
+--- a/src/changelog_gen/cli.py
++++ b/src/changelog_gen/cli.py
+@@ -1,5 +1,6 @@
+ """Command line entry point: read git log, print a changelog."""
+ 
++import argparse
+ import subprocess
+ import sys
+ 
+@@ -14,18 +15,24 @@ def read_messages(rev_range: str = "HEAD") -> list[str]:
+     return [m.strip() for m in out.stdout.split("\0") if m.strip()]
+ 
+ 
+-def main() -> int:
++def main(argv: list[str] | None = None) -> int:
++    args = build_parser().parse_args(argv)
+     commits = []
+-    for message in read_messages(sys.argv[1] if len(sys.argv) > 1 else "HEAD"):
++    for message in read_messages(args.rev_range):
+         try:
+             commits.append(parse_commit(message))
+         except CommitParseError as exc:
+             print(f"skip: {exc}", file=sys.stderr)
+-    sys.stdout.write(render(commits))
++    sys.stdout.write(render(commits, version=args.title))
+     return 0
+ 
+ 
++def build_parser() -> argparse.ArgumentParser:
++    parser = argparse.ArgumentParser(prog="changelog-gen")
++    parser.add_argument("rev_range", nargs="?", default="HEAD")
++    parser.add_argument("--title", default="Unreleased", metavar="TEXT", help="replace the '## Unreleased' heading")
++    return parser
++
++
+ if __name__ == "__main__":
+     raise SystemExit(main())
+-
+-import os  # legacy leftover
+$ git status --short
+ M CHANGELOG.md
+
+$ bash scripts/check.sh; echo exit=$?
+check ok
+exit=0
+
+$ python -m pytest -q
+25 passed in 4.58s
+
+$ changelog-gen v0.2.0..HEAD --title v0.3.0 (проверка нового флага)
+skip: not a Conventional Commit header: 'wip stuff'
+## v0.3.0
+
+### Features
+
+- **cli**: add --title flag to replace the changelog heading
+
+### Other
+
+- **changelog**: document --title flag under Unreleased
+- **cli**: cover --title flag and skipping of invalid subjects
+- add legacy leftover import

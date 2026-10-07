@@ -1,0 +1,20 @@
+$ changelog-gen (на временном репозитории с breaking-коммитами)
+skip: not a Conventional Commit header: 'wip stuff'
+## Unreleased
+
+### Breaking Changes
+
+- new auth
+- **api**: drop v1 endpoint
+
+### Features
+
+- add export
+
+### Fixes
+
+- **api**: handle empty body
+
+### Other
+
+- split module

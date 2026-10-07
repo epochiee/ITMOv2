@@ -1,0 +1,72 @@
+Сырые ответы MCP tool parse_commit (сервер changelog-gen), живая сессия в песочнице changelog-gen-exp.
+Тайм-коды не включены.
+
+=== Фаза B: три темы из промпта ===
+
+> parse_commit(message="feat(api)!: drop v1")
+{
+  "ok": true,
+  "type": "feat",
+  "scope": "api",
+  "description": "drop v1",
+  "breaking": true
+}
+
+> parse_commit(message="fix: handle empty log")
+{
+  "ok": true,
+  "type": "fix",
+  "scope": null,
+  "description": "handle empty log",
+  "breaking": false
+}
+
+> parse_commit(message="update stuff")
+{
+  "ok": false,
+  "error": "not a Conventional Commit header: 'update stuff'"
+}
+
+=== Фаза D: темы коммитов диапазона v0.2.0..HEAD (шаг 3 skill release-notes) ===
+
+> parse_commit(message="wip stuff")
+{
+  "ok": false,
+  "error": "not a Conventional Commit header: 'wip stuff'"
+}
+
+> parse_commit(message="docs(changelog): document --title flag under Unreleased")
+{
+  "ok": true,
+  "type": "docs",
+  "scope": "changelog",
+  "description": "document --title flag under Unreleased",
+  "breaking": false
+}
+
+> parse_commit(message="test(cli): cover --title flag and skipping of invalid subjects")
+{
+  "ok": true,
+  "type": "test",
+  "scope": "cli",
+  "description": "cover --title flag and skipping of invalid subjects",
+  "breaking": false
+}
+
+> parse_commit(message="feat(cli): add --title flag to replace the changelog heading")
+{
+  "ok": true,
+  "type": "feat",
+  "scope": "cli",
+  "description": "add --title flag to replace the changelog heading",
+  "breaking": false
+}
+
+> parse_commit(message="chore: add legacy leftover import")
+{
+  "ok": true,
+  "type": "chore",
+  "scope": null,
+  "description": "add legacy leftover import",
+  "breaking": false
+}

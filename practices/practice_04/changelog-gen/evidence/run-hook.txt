@@ -1,0 +1,91 @@
+Дословный текст блокирующих сообщений hook PostToolUse:Edit (scripts/check.sh), живая сессия в песочнице.
+Hook сработал три раза подряд, после каждого Edit. Тайм-коды не включены.
+
+Что из замечаний чьё:
+- F821 `argparse` (две ошибки) — мои: первым Edit добавил build_parser, а `import argparse` вставил следующим Edit; hook поймал промежуточное состояние.
+- F401 `os` imported but unused — старый долг: строку `import os  # legacy leftover` добавил коммит "chore: add legacy leftover import". Убрана отдельным Edit.
+После этого `bash scripts/check.sh` -> "check ok", код 0.
+
+=== Срабатывание 1 (после Edit cli.py: добавлен main(argv)/build_parser, import argparse ещё нет) ===
+
+PostToolUse:Edit hook blocking error from command: "bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"": [bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"]: CHECK FAILED:
+F821 Undefined name `argparse`
+  --> src\changelog_gen\cli.py:29:23
+   |
+29 | def build_parser() -> argparse.ArgumentParser:
+   |                       ^^^^^^^^
+30 |     parser = argparse.ArgumentParser(prog="changelog-gen")
+31 |     parser.add_argument("rev_range", nargs="?", default="HEAD")
+   |
+
+F821 Undefined name `argparse`
+  --> src\changelog_gen\cli.py:30:14
+   |
+29 | def build_parser() -> argparse.ArgumentParser:
+30 |     parser = argparse.ArgumentParser(prog="changelog-gen")
+   |              ^^^^^^^^
+31 |     parser.add_argument("rev_range", nargs="?", default="HEAD")
+   |
+
+F401 [*] `os` imported but unused
+  --> src\changelog_gen\cli.py:39:8
+   |
+37 |     raise SystemExit(main())
+38 |
+39 | import os  # legacy leftover
+   |        ^^
+help: Remove unused import: `os`
+   |
+38 |
+   - import os  # legacy leftover
+   |
+
+Found 3 errors.
+[*] 1 fixable with the `--fix` option.
+
+
+=== Срабатывание 2 (после Edit: добавлен import argparse) ===
+
+PostToolUse:Edit hook blocking error from command: "bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"": [bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"]: CHECK FAILED:
+F401 [*] `os` imported but unused
+  --> src\changelog_gen\cli.py:40:8
+   |
+38 |     raise SystemExit(main())
+39 |
+40 | import os  # legacy leftover
+   |        ^^
+help: Remove unused import: `os`
+   |
+39 |
+   - import os  # legacy leftover
+   |
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.
+
+
+=== Срабатывание 3 (после Edit tests/test_cli.py: добавлены тесты) ===
+
+PostToolUse:Edit hook blocking error from command: "bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"": [bash "$CLAUDE_PROJECT_DIR/scripts/check.sh"]: CHECK FAILED:
+F401 [*] `os` imported but unused
+  --> src\changelog_gen\cli.py:40:8
+   |
+38 |     raise SystemExit(main())
+39 |
+40 | import os  # legacy leftover
+   |        ^^
+help: Remove unused import: `os`
+   |
+39 |
+   - import os  # legacy leftover
+   |
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.
+
+
+=== Итог после удаления `import os` ===
+
+$ bash scripts/check.sh; echo "exit=$?"
+check ok
+exit=0

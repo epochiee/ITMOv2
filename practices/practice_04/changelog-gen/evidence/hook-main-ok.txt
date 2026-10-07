@@ -1,0 +1,3 @@
+--- hook command on feature-a checkout (CLAUDE_PROJECT_DIR=main dir) ---
+check ok
+exit=0
