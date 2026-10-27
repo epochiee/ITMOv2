@@ -1,0 +1,47 @@
+## Archive Complete
+
+Change: filter-commit-types | Schema: spec-driven | Archived to: openspec/changes/archive/2026-10-27-filter-commit-types | Specs: synced
+
+$ openspec list
+No active changes found.
+
+$ openspec list --specs
+Specs:
+  changelog-cli     requirements 7
+
+$ ls openspec/changes/archive/*
+design.md
+proposal.md
+specs
+tasks.md
+
+$ openspec show changelog-cli --type spec --json --no-scenarios (requirements)
+- CLI SHALL читать коммиты из диапазона git, переданного единственным необязательным позиционным аргум
+- CLI SHALL пропускать сообщения, которые не являются Conventional Commits, и MUST сообщать о каждом п
+- При флаге `--types` со списком типов через запятую CLI SHALL выводить только коммиты перечисленных т
+- Коммит с breaking-изменением (`!` в заголовке или футер `BREAKING CHANGE:`) MUST попадать в вывод в 
+- Если `--types` содержит неизвестный тип или пустое значение, CLI MUST завершиться с кодом 2, не чита
+- Если после фильтрации не осталось ни одного коммита, CLI SHALL вывести только заголовок `## Unreleas
+- Неизвестный флаг, сокращённое имя флага или больше одного позиционного аргумента MUST приводить к ко
+
+$ openspec validate --all --strict --no-interactive
+✓ spec/changelog-cli
+Totals: 1 passed, 0 failed (1 items)
+
+$ openspec view
+
+OpenSpec Dashboard
+
+════════════════════════════════════════════════════════════
+Summary:
+  ● Specifications: 1 specs, 7 requirements
+  ● Active Changes: 0 in progress
+  ● Completed Changes: 0
+
+Specifications
+────────────────────────────────────────────────────────────
+  ▪ changelog-cli                  7 requirements
+
+════════════════════════════════════════════════════════════
+
+Use openspec list --changes or openspec list --specs for detailed views

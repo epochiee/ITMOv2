@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Mermaid: 08-fragment-after.md</title>
+<style>body{font-family:sans-serif;margin:24px;background:#fff}</style></head>
+<body><h1>08-fragment-after.md</h1><pre class="mermaid">sequenceDiagram
+    actor U as Пользователь
+    participant CLI as cli.main
+    participant G as git log
+    participant P as parser и фильтр --types
+    participant R as renderer
+    participant FS as Файловая система
+    U-&gt;&gt;CLI: changelog-gen --output CHANGELOG.md
+    CLI-&gt;&gt;G: read_messages(range)
+    G--&gt;&gt;CLI: сообщения коммитов
+    CLI-&gt;&gt;P: parse_commit, фильтр типов
+    P--&gt;&gt;CLI: коммиты
+    alt коммитов нет
+        CLI--&gt;&gt;U: stderr «nothing to write», код 0, файл не открыт
+    else есть коммиты
+        CLI-&gt;&gt;R: render(commits)
+        R--&gt;&gt;CLI: секция Markdown
+        CLI-&gt;&gt;FS: прочитать CHANGELOG.md (пусто, если файла нет)
+        CLI-&gt;&gt;FS: записать во временный файл: секция, пустая строка, старое содержимое
+        CLI-&gt;&gt;FS: os.replace(временный, CHANGELOG.md)
+        alt OSError на любом шаге записи
+            CLI-&gt;&gt;FS: удалить временный файл
+            CLI--&gt;&gt;U: stderr «cannot write …», код 1, файл прежний
+        else успех
+            CLI--&gt;&gt;U: stderr «wrote CHANGELOG.md», код 0
+        end
+    end
+</pre>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad: true});</script>
+</body></html>

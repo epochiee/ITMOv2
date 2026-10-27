@@ -1,0 +1,34 @@
+## Взаимодействие
+
+```mermaid
+sequenceDiagram
+    actor U as Пользователь
+    participant CLI as cli.main
+    participant G as git log
+    participant P as parser и фильтр --types
+    participant R as renderer
+    participant FS as Файловая система
+    U->>CLI: changelog-gen --output CHANGELOG.md
+    CLI->>G: read_messages(range)
+    G-->>CLI: сообщения коммитов
+    CLI->>P: parse_commit, фильтр типов
+    P-->>CLI: коммиты
+    alt коммитов нет
+        CLI-->>U: stderr «nothing to write», код 0, файл не открыт
+    else есть коммиты
+        CLI->>R: render(commits)
+        R-->>CLI: секция Markdown
+        CLI->>FS: прочитать CHANGELOG.md (пусто, если файла нет)
+        CLI->>FS: записать во временный файл: секция, пустая строка, старое содержимое
+        CLI->>FS: os.replace(временный, CHANGELOG.md)
+        alt OSError на любом шаге записи
+            CLI->>FS: удалить временный файл
+            CLI-->>U: stderr «cannot write …», код 1, файл прежний
+        else успех
+            CLI-->>U: stderr «wrote CHANGELOG.md», код 0
+        end
+    end
+```
+
+Пользователь запускает `changelog-gen --output CHANGELOG.md`. CLI разбирает аргументы и, как и раньше, читает сообщения из `git log`, разбирает их парсером и отбрасывает лишние типы. Если после фильтра коммитов нет, CLI пишет в stderr `nothing to write` и завершается, не открывая файл. Иначе рендерер строит секцию, CLI читает текущее содержимое файла (пустая строка, если файла нет), склеивает «секция + пустая строка + старое содержимое» и записывает результат во временный файл в том же каталоге. Затем временный файл заменяет целевой через `os.replace`, и CLI печатает в stderr `wrote CHANGELOG.md`. Если на любом шаге записи возникает `OSError`, временный файл удаляется, целевой остаётся прежним, а CLI печатает `cannot write …` и возвращает код 1.
+

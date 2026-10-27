@@ -1,0 +1,47 @@
+$ bash scripts/check.sh
+check ok
+exit=0
+
+$ .venv/Scripts/python -m pytest -q tests/test_cli.py
+....................                                                     [100%]
+20 passed in 10.02s
+
+$ changelog-gen --types feat,fix practice_04~12..practice_04
+## Unreleased
+
+### Features
+
+- **parser**: detect breaking changes and render a separate section
+- **renderer**: group changelog entries by commit type
+- initial changelog-gen with parser, renderer and CLI
+
+### Fixes
+
+- **skill**: start release range at last CHANGELOG change when no tags
+exit=0
+
+$ changelog-gen --types feat,feature
+usage: changelog-gen [-h] [--types TYPE[,TYPE...]] [range]
+changelog-gen: error: argument --types: unknown type 'feature', expected one of feat, fix, docs, style, refactor, perf, test, build, ci, chore
+exit=2
+
+$ changelog-gen --no-merges
+usage: changelog-gen [-h] [--types TYPE[,TYPE...]] [range]
+changelog-gen: error: unrecognized arguments: --no-merges
+exit=2
+
+$ changelog-gen --help
+usage: changelog-gen [-h] [--types TYPE[,TYPE...]] [range]
+
+Print a Markdown changelog from Conventional Commits in git history.
+
+positional arguments:
+  range                 git revision range (default: HEAD)
+
+options:
+  -h, --help            show this help message and exit
+  --types TYPE[,TYPE...]
+                        only include these commit types; repeatable, breaking
+                        changes are always included (types: feat, fix, docs,
+                        style, refactor, perf, test, build, ci, chore)
+exit=0
