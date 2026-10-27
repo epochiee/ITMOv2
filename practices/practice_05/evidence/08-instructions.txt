@@ -1,0 +1,15 @@
+$ openspec instructions design --change write-changelog-file --json  (поля rules, context, resolvedOutputPath)
+{
+  "artifactId": "design",
+  "rules": [
+    "Объясни взаимодействие диаграммой Mermaid."
+  ],
+  "context": "Language: ru\nAll artifacts must be written in ru.\nKeep OpenSpec structural headings and SHALL/MUST keywords in English.",
+  "resolvedOutputPath": "<repo>\\practices\\practice_05\\changelog-gen\\openspec\\changes\\write-changelog-file\\design.md",
+  "existingOutputPaths": [
+    "<repo>\\practices\\practice_05\\changelog-gen\\openspec\\changes\\write-changelog-file\\design.md"
+  ]
+}
+
+$ openspec instructions specs --change write-changelog-file --json (rules)
+None

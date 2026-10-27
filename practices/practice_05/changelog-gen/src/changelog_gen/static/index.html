@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Предпросмотр changelog</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --text: #1d1d1b; --muted: #6b6b66; --line: #dddcd6;
+    --accent: #2d5bd7; --accent-text: #ffffff; --danger: #b3261e; --danger-bg: #fdecea;
+    --warn-bg: #fff6dd; --warn-line: #e6c55c; --ok: #1e7d3c; --code-bg: #f1f0ec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161615; --panel: #1f1f1d; --text: #ecebe6; --muted: #a3a29b; --line: #3a3a36;
+      --accent: #7c9cf5; --accent-text: #10131c; --danger: #ff8a80; --danger-bg: #3a1d1b;
+      --warn-bg: #36301a; --warn-line: #8a7426; --ok: #7fd49a; --code-bg: #262624;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px 48px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 16px; }
+  h1 { font-size: 22px; margin: 0; }
+  .repo { color: var(--muted); }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  label, legend { font-weight: 600; }
+  input[type=text] { width: 100%; padding: 8px 10px; font: 15px ui-monospace, Consolas, monospace;
+         background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; }
+  input[aria-invalid=true] { border-color: var(--danger); outline: 2px solid var(--danger); }
+  .hint { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+  .field-error { color: var(--danger); font-size: 14px; margin: 6px 0 0; }
+  fieldset { border: 0; padding: 0; margin: 16px 0 0; }
+  .types { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0; }
+  .types label { font-weight: 400; font-family: ui-monospace, Consolas, monospace; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  button { font: inherit; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--line);
+           background: var(--panel); color: var(--text); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .actions { margin-top: 16px; }
+  .banner { margin: 16px 0 0; padding: 12px 14px; border-radius: 8px; background: var(--danger-bg);
+            border: 1px solid var(--danger); }
+  .banner .code, .code { color: var(--muted); font: 12px ui-monospace, Consolas, monospace; }
+  #result { margin-top: 16px; }
+  .status { color: var(--muted); }
+  .summary { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+  .stale { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 6px;
+           padding: 6px 10px; margin-bottom: 8px; }
+  details.skipped { background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 6px;
+                    padding: 6px 10px; margin-bottom: 8px; }
+  details.skipped ul { margin: 6px 0 0; padding-left: 20px; font-family: ui-monospace, Consolas, monospace; }
+  pre#output { margin: 0; padding: 12px; background: var(--code-bg); border-radius: 6px; max-height: 55vh;
+               overflow: auto; white-space: pre-wrap; word-break: break-word;
+               font: 14px/1.45 ui-monospace, Consolas, monospace; }
+  .copy-row { margin-top: 8px; }
+  .copied { color: var(--ok); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Предпросмотр changelog</h1>
+    <span class="repo" id="repo"></span>
+  </header>
+
+  <form class="panel" id="form" novalidate>
+    <label for="range">Диапазон коммитов</label>
+    <input type="text" id="range" name="range" placeholder="HEAD" autocomplete="off" spellcheck="false"
+           aria-describedby="range-hint range-error">
+    <p class="hint" id="range-hint">Пусто — вся история (HEAD). Примеры: v1.0..HEAD, main, HEAD~10..HEAD</p>
+    <p class="field-error" id="range-error" role="alert" hidden></p>
+
+    <fieldset id="types-group" aria-describedby="types-note types-hint types-error">
+      <legend>Типы коммитов</legend>
+      <div class="types" id="types"></div>
+      <div class="row">
+        <button type="button" id="all">Все</button>
+        <button type="button" id="none">Ничего</button>
+      </div>
+      <p class="hint" id="types-note">Breaking-изменения попадают в changelog всегда, независимо от выбранных типов.</p>
+      <p class="field-error" id="types-hint" hidden>Выберите хотя бы один тип</p>
+      <p class="field-error" id="types-error" role="alert" hidden></p>
+    </fieldset>
+
+    <div class="actions"><button type="submit" class="primary" id="show">Показать</button></div>
+  </form>
+
+  <div class="banner" id="banner" role="alert" hidden>
+    <span id="banner-text"></span>
+    <div class="row" style="margin-top:8px">
+      <button type="button" id="retry">Повторить</button>
+      <span class="code" id="banner-code"></span>
+    </div>
+  </div>
+
+  <section id="result" class="panel" aria-live="polite">
+    <p class="status" id="status">Укажите диапазон и типы и нажмите «Показать».</p>
+    <div class="stale" id="stale" hidden>Параметры изменены — нажмите «Показать», чтобы обновить.</div>
+    <div id="success" hidden>
+      <div class="summary" id="summary"></div>
+      <details class="skipped" id="skipped" hidden><summary id="skipped-title"></summary><ul id="skipped-list"></ul></details>
+      <pre id="output" tabindex="0"></pre>
+      <div class="row copy-row">
+        <button type="button" id="copy">Копировать</button>
+        <span id="copy-status" aria-live="polite"></span>
+      </div>
+    </div>
+    <div id="empty" hidden>
+      <div class="summary" id="empty-summary"></div>
+      <p id="empty-text"></p>
+      <details class="skipped" id="empty-skipped" hidden><summary>Заголовки пропущенных коммитов</summary><ul id="empty-skipped-list"></ul></details>
+      <button type="button" id="select-all-show" hidden>Выбрать все типы и показать</button>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const EXAMPLES = " Примеры: v1.0..HEAD, main, HEAD~10..HEAD.";
+const RANGE_RULES = {
+  leading_dash: () => "Диапазон не может начинаться с „-“.",
+  whitespace: () => "В диапазоне не должно быть пробелов.",
+  control_char: () => "В диапазоне есть недопустимые символы.",
+  too_long: (d) => `Диапазон длиннее ${d.max_length} символов.`,
+};
+const GIT_REASONS = {
+  timeout: "git не ответил вовремя. Попробуйте сузить диапазон или повторить.",
+  not_found: "git не найден на этом компьютере.",
+  failed: "Не удалось прочитать историю git.",
+};
+const GENERIC = "Не удалось сформировать changelog. Подробности — в терминале, где запущен сервис.";
+const OFFLINE = "Нет связи с сервисом. Убедитесь, что changelog-gen-web запущен, и нажмите „Повторить“.";
+
+const state = { types: [], busy: false, last: null, shown: null, retry: null, blocked: false };
+
+function boxes() { return [...document.querySelectorAll("#types input")]; }
+function checked() { return boxes().filter((b) => b.checked).map((b) => b.value); }
+
+function setText(id, text) { $(id).textContent = text; }
+function show(id, on) { $(id).hidden = !on; }
+
+function syncControls() {
+  const none = checked().length === 0;
+  show("types-hint", none && state.types.length > 0);
+  $("show").disabled = none || state.busy || state.blocked || state.types.length === 0;
+}
+
+function clearFieldErrors() {
+  show("range-error", false); $("range").removeAttribute("aria-invalid");
+  show("types-error", false);
+}
+
+function hideBanner() { if (!state.blocked) show("banner", false); }
+
+function showBanner(text, code, retry) {
+  setText("banner-text", text);
+  setText("banner-code", code ? `код: ${code}` : "");
+  state.retry = retry;
+  show("retry", Boolean(retry));
+  show("banner", true);
+}
+
+function commits(n) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} коммит`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} коммита`;
+  return `${n} коммитов`;
+}
+
+function resetResult(statusText) {
+  show("success", false); show("empty", false); show("stale", false);
+  setText("status", statusText); show("status", Boolean(statusText));
+}
+
+function markStale() {
+  if (state.busy) state.changedWhileBusy = true;
+  else if (state.shown) show("stale", true);
+}
+
+function params() {
+  const types = checked();
+  return { range: $("range").value, types: types.length === state.types.length ? null : types };
+}
+
+function url(p) {
+  const q = [];
+  if (p.range !== "") q.push("range=" + encodeURIComponent(p.range));
+  if (p.types) q.push("types=" + p.types.map(encodeURIComponent).join(","));
+  return "/api/changelog" + (q.length ? "?" + q.join("&") : "");
+}
+
+async function request(path) {
+  let response;
+  try {
+    response = await fetch(path, { headers: { Accept: "application/json" }, cache: "no-store" });
+  } catch {
+    return { kind: "offline" };
+  }
+  let data = null;
+  try { data = await response.json(); } catch { /* not JSON */ }
+  if (response.ok && data && !data.error) return { kind: "ok", data };
+  if (data && data.error && typeof data.error.code === "string") return { kind: "error", error: data.error };
+  return { kind: "unknown", status: response.status };
+}
+
+function showError(result, retry) {
+  if (result.kind === "offline") return showBanner(OFFLINE, "", retry);
+  if (result.kind === "unknown") return showBanner(GENERIC, `HTTP ${result.status}`, retry);
+  const { code, details = {} } = result.error;
+  if (code === "invalid_range" || code === "unknown_range" || code === "range_too_large") {
+    let text;
+    if (code === "invalid_range") text = (RANGE_RULES[details.rule] || (() => "Недопустимый диапазон."))(details) + EXAMPLES;
+    else if (code === "unknown_range") text = `Не удалось найти „${details.range}“ в репозитории. Проверьте имя тега, ветки или коммита.`;
+    else text = `В диапазоне больше ${details.limit} коммитов. Сузьте диапазон, например v1.0..HEAD.`;
+    setText("range-error", text); show("range-error", true);
+    $("range").setAttribute("aria-invalid", "true"); $("range").focus();
+    return;
+  }
+  if (code === "invalid_types") {
+    setText("types-error", `Сервис не принял тип „${(details.invalid || []).join(", ")}“. Обновите страницу.`);
+    show("types-error", true);
+    return;
+  }
+  if (code === "not_a_repository") {
+    state.blocked = true;
+    for (const el of $("form").elements) el.disabled = true;
+    return showBanner("Репозиторий недоступен. Перезапустите changelog-gen-web из каталога git-репозитория.", code, null);
+  }
+  if (code === "git_error") return showBanner(GIT_REASONS[details.reason] || GIT_REASONS.failed, code, retry);
+  return showBanner(GENERIC, code, retry);
+}
+
+function fillSkipped(listId, items) {
+  const list = $(listId); list.replaceChildren();
+  for (const item of items) {
+    const li = document.createElement("li"); li.textContent = item.header; list.appendChild(li);
+  }
+}
+
+function summaryText(data) {
+  const types = data.types ? data.types.join(", ") : "все";
+  return `Диапазон: ${data.range} · Типы: ${types} · Коммитов в changelog: ${data.stats.included}`;
+}
+
+function showResult(data) {
+  state.shown = data;
+  resetResult("");
+  show("stale", state.changedWhileBusy);
+  const s = data.stats;
+  if (s.included > 0) {
+    setText("summary", summaryText(data));
+    setText("output", data.markdown);
+    setText("skipped-title", `Пропущено коммитов не по Conventional Commits: ${s.skipped}`);
+    fillSkipped("skipped-list", data.skipped);
+    show("skipped", s.skipped > 0); setText("copy-status", "");
+    show("success", true);
+    return;
+  }
+  setText("empty-summary", summaryText(data));
+  let text; let filterReason = false;
+  if (s.total === 0) text = `В диапазоне „${data.range}“ нет коммитов. Проверьте границы диапазона.`;
+  else if (s.skipped === s.total) text = "Ни один коммит в диапазоне не оформлен по Conventional Commits.";
+  else { text = `Нет коммитов выбранных типов. В диапазоне ${commits(s.filtered_out)} других типов.`; filterReason = true; }
+  setText("empty-text", text);
+  fillSkipped("empty-skipped-list", data.skipped);
+  show("empty-skipped", s.total > 0 && s.skipped === s.total);
+  show("select-all-show", filterReason);
+  show("empty", true);
+}
+
+async function submit(p) {
+  if (state.busy || state.blocked || checked().length === 0 && p === undefined) return;
+  p = p || params();
+  state.busy = true; state.last = p; state.shown = null; state.changedWhileBusy = false;
+  clearFieldErrors(); hideBanner();
+  resetResult("Формируем changelog…");
+  syncControls();
+  const slow = setTimeout(() => setText("status", "Формируем changelog… Большая история — это может занять время."), 5000);
+  const result = await request(url(p));
+  clearTimeout(slow);
+  state.busy = false;
+  if (result.kind === "ok") showResult(result.data);
+  else { resetResult(""); showError(result, () => submit(state.last)); }
+  syncControls();
+}
+
+async function loadMeta() {
+  hideBanner();
+  const result = await request("/api/meta");
+  if (result.kind !== "ok") { showError(result, loadMeta); return; }
+  const meta = result.data;
+  setText("repo", meta.repository);
+  $("range").placeholder = meta.default_range;
+  state.types = meta.types;
+  $("types").replaceChildren(...meta.types.map((type) => {
+    const label = document.createElement("label");
+    const box = document.createElement("input");
+    box.type = "checkbox"; box.value = type; box.checked = true;
+    label.append(box, " " + type);
+    return label;
+  }));
+  syncControls();
+}
+
+$("form").addEventListener("submit", (e) => { e.preventDefault(); submit(); });
+$("range").addEventListener("input", () => { show("range-error", false); $("range").removeAttribute("aria-invalid"); markStale(); });
+$("types").addEventListener("change", () => { show("types-error", false); syncControls(); markStale(); });
+$("all").addEventListener("click", () => { boxes().forEach((b) => { b.checked = true; }); syncControls(); markStale(); });
+$("none").addEventListener("click", () => { boxes().forEach((b) => { b.checked = false; }); syncControls(); markStale(); });
+$("retry").addEventListener("click", () => { if (state.retry) state.retry(); });
+$("select-all-show").addEventListener("click", () => { boxes().forEach((b) => { b.checked = true; }); syncControls(); submit(); });
+$("copy").addEventListener("click", async () => {
+  const text = state.shown ? state.shown.markdown : "";
+  try {
+    await navigator.clipboard.writeText(text);
+    setText("copy-status", "Скопировано"); $("copy-status").className = "copied";
+    setTimeout(() => setText("copy-status", ""), 2000);
+  } catch {
+    const range = document.createRange(); range.selectNodeContents($("output"));
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+    setText("copy-status", "Текст выделен — нажмите Ctrl+C (⌘C на Mac)"); $("copy-status").className = "";
+  }
+});
+
+syncControls();
+loadMeta();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+## Specs Synced: filter-commit-types
+
+changelog-cli: создан новый main spec (Purpose из delta, 7 ADDED-требований, 18 сценариев). MODIFIED/REMOVED/RENAMED нет.
+
+$ openspec validate --specs --strict --no-interactive
+✓ spec/changelog-cli
+Totals: 1 passed, 0 failed (1 items)
+
+$ git diff --no-index /dev/null openspec/specs/changelog-cli/spec.md
+error: Could not access 'practices/practice_05/changelog-gen/nul'

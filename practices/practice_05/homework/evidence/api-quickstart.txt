@@ -1,0 +1,36 @@
+# quickstart.md: ручная проверка API (demo-repo, 8 коммитов)
+
+$ curl -s 'http://127.0.0.1:8765/api/meta'
+{"repository": "demo-repo", "types": ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore"], "default_range": "HEAD", "max_range_length": 200, "max_commits": 1000}
+HTTP 200
+
+$ curl -s 'http://127.0.0.1:8765/api/changelog?types=feat,fix'
+{"range": "HEAD", "types": ["feat", "fix"], "markdown": "## Unreleased\n\n### Breaking Changes\n\n- **api**: drop v1 endpoints\n\n### Features\n\n- **web**: preview <changelog> & copy\n- **cli**: add --types filter\n- initial release\n\n### Fixes\n\n- **parser**: handle empty body\n", "stats": {"total": 8, "included": 5, "filtered_out": 2, "skipped": 1}, "skipped": [{"header": "update stuff", "reason": "not a Conventional Commit header: 'update stuff'"}]}
+HTTP 200
+
+$ curl -s 'http://127.0.0.1:8765/api/changelog?range=v1.0..HEAD&types=docs'
+{"range": "v1.0..HEAD", "types": ["docs"], "markdown": "## Unreleased\n\n### Breaking Changes\n\n- **api**: drop v1 endpoints\n\n### Other\n\n- describe --types\n", "stats": {"total": 7, "included": 2, "filtered_out": 4, "skipped": 1}, "skipped": [{"header": "update stuff", "reason": "not a Conventional Commit header: 'update stuff'"}]}
+HTTP 200
+
+$ curl -s 'http://127.0.0.1:8765/api/changelog?range=--output%3Dpwned.txt'
+{"error": {"code": "invalid_range", "message": "range rejected: leading_dash", "field": "range", "details": {"rule": "leading_dash", "max_length": 200}}}
+HTTP 400
+
+$ curl -s 'http://127.0.0.1:8765/api/changelog?types=feature'
+{"error": {"code": "invalid_types", "message": "unknown type 'feature', expected one of feat, fix, docs, style, refactor, perf, test, build, ci, chore", "field": "types", "details": {"invalid": ["feature"], "allowed": ["feat", "fix", "docs", "style", "refactor", "perf", "test", "build", "ci", "chore"]}}}
+HTTP 400
+
+$ curl -s 'http://127.0.0.1:8765/api/changelog?range=v9.9..HEAD'
+{"error": {"code": "unknown_range", "message": "unknown revision or range 'v9.9..HEAD'", "field": "range", "details": {"range": "v9.9..HEAD"}}}
+HTTP 422
+
+$ curl -s -H 'Host: evil.example:8765' http://127.0.0.1:8765/api/meta
+{"error": {"code": "forbidden", "message": "unexpected Host header", "field": null, "details": {}}}
+HTTP 403
+
+$ ls pwned.txt
+ls: cannot access 'pwned.txt': No such file or directory
+
+$ cmp <(changelog-gen --types feat,fix | tr -d '\r') <(API markdown для types=feat,fix)
+identical
+(первая попытка сравнения дала ложное «differ»: Python на Windows писал stdout с CRLF в другой /tmp — ошибка проверки, не сервиса)

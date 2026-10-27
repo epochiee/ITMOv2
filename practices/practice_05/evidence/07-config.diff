@@ -1,0 +1,14 @@
+diff --git a/../evidence/07-config-before.yaml b/openspec/config.yaml
+index 4a19e12..ffbec76 100644
+--- a/../evidence/07-config-before.yaml
++++ b/openspec/config.yaml
+@@ -14,6 +14,9 @@ context: |
+ #       - Always state what is out of scope
+ #     tasks:
+ #       - Break tasks into chunks of max 2 hours
++rules:
++  design:
++    - Объясни взаимодействие диаграммой Mermaid.
+ 
+ # Per-operation guidance (optional)
+ # Add advisory guidance for how apply and archive work should be conducted.

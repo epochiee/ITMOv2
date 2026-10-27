@@ -1,0 +1,66 @@
+diff --git a/practices/practice_04/changelog-gen/src/changelog_gen/cli.py b/practices/practice_05/changelog-gen/src/changelog_gen/cli.py
+index 495b66d..bb7082e 100644
+--- a/practices/practice_04/changelog-gen/src/changelog_gen/cli.py
++++ b/practices/practice_05/changelog-gen/src/changelog_gen/cli.py
+@@ -1,9 +1,10 @@
+ """Command line entry point: read git log, print a changelog."""
+ 
++import argparse
+ import subprocess
+ import sys
+ 
+-from changelog_gen.parser import CommitParseError, parse_commit
++from changelog_gen.parser import TYPES, CommitParseError, parse_commit
+ from changelog_gen.renderer import render
+ 
+ 
+@@ -14,13 +15,45 @@ def read_messages(rev_range: str = "HEAD") -> list[str]:
+     return [m.strip() for m in out.stdout.split("\0") if m.strip()]
+ 
+ 
+-def main() -> int:
++def _types(value: str) -> set[str]:
++    names = [name.strip() for name in value.split(",")]
++    bad = [name for name in names if name not in TYPES]
++    if bad:
++        raise argparse.ArgumentTypeError(
++            f"unknown type {', '.join(map(repr, bad))}, expected one of {', '.join(TYPES)}"
++        )
++    return set(names)
++
++
++def _parser() -> argparse.ArgumentParser:
++    parser = argparse.ArgumentParser(
++        prog="changelog-gen",
++        description="Print a Markdown changelog from Conventional Commits in git history.",
++        allow_abbrev=False,
++    )
++    parser.add_argument("range", nargs="?", default="HEAD", help="git revision range (default: HEAD)")
++    parser.add_argument(
++        "--types",
++        action="append",
++        type=_types,
++        metavar="TYPE[,TYPE...]",
++        help=f"only include these commit types; repeatable, breaking changes are always included "
++        f"(types: {', '.join(TYPES)})",
++    )
++    return parser
++
++
++def main(argv: list[str] | None = None) -> int:
++    args = _parser().parse_args(argv)
+     commits = []
+-    for message in read_messages(sys.argv[1] if len(sys.argv) > 1 else "HEAD"):
++    for message in read_messages(args.range):
+         try:
+             commits.append(parse_commit(message))
+         except CommitParseError as exc:
+             print(f"skip: {exc}", file=sys.stderr)
++    if args.types:
++        selected = set().union(*args.types)
++        commits = [c for c in commits if c.breaking or c.type in selected]
+     sys.stdout.write(render(commits))
+     return 0
+ 
+ practices/{practice_04 => practice_05}/changelog-gen/tests/test_cli.py       | 150 +++++++++++++++++++++
+ 1 file changed, 150 insertions(+)

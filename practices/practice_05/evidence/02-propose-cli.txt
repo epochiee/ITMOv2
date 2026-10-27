@@ -1,0 +1,48 @@
+$ openspec --version
+1.14.1
+
+$ openspec list
+Changes:
+  filter-commit-types     0/6 tasks     just now
+
+$ openspec list --specs
+No specs found.
+
+$ openspec status --change filter-commit-types
+- Loading change status...
+Change: filter-commit-types
+Schema: spec-driven
+Change root: <repo>\practices\practice_05\changelog-gen\openspec\changes\filter-commit-types
+Progress: 4/4 artifacts complete
+
+[x] proposal
+[x] specs
+[x] design
+[x] tasks
+
+All planning artifacts complete!
+Next: openspec instructions apply --change "filter-commit-types" --json
+
+$ openspec validate filter-commit-types --type change --strict --no-interactive
+Change 'filter-commit-types' is valid
+exit=0
+
+$ openspec view
+
+OpenSpec Dashboard
+
+════════════════════════════════════════════════════════════
+Summary:
+  ● Specifications: 0 specs, 0 requirements
+  ● Active Changes: 1 in progress
+  ● Completed Changes: 0
+  ● Task Progress: 0/6 (0% complete)
+
+Active Changes
+────────────────────────────────────────────────────────────
+  ◉ filter-commit-types            [░░░░░░░░░░░░░░░░░░░░] 0%
+    └─ [spec-driven] proposal✓ specs✓ design✓ tasks✓
+
+════════════════════════════════════════════════════════════
+
+Use openspec list --changes or openspec list --specs for detailed views
