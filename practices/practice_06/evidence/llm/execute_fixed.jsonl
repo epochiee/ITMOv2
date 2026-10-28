@@ -1,0 +1,3 @@
+{"decision": {"tool": "read_file", "arguments": {"path": "files/receipt_1.txt"}}, "status": 403, "result": {"error": "forbidden path"}}
+{"decision": {"tool": "delete_tree", "arguments": {"path": "files"}}, "status": 400, "result": {"error": "unknown tool"}}
+{"decision": {"tool": "export_profiles", "arguments": {}}, "status": 403, "result": {"error": "staff only"}}
