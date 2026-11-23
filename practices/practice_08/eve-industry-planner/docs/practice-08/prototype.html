@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Верфь — прототип калькулятора</title>
+<style>
+  :root {
+    color: #173c35;
+    background: #f5f5ef;
+    font: 16px/1.5 Inter, "Segoe UI", sans-serif;
+    --primary: #166052;
+    --surface: #fff;
+    --muted: #51655d;
+    --border: #cbd5cc;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  body { margin: 0; }
+  .wrap { max-width: 1240px; margin: auto; padding-inline: clamp(16px, 4vw, 60px); }
+  .controls { padding-block: 12px; background: #e7eee3; }
+  .controls .wrap { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .mast { background: #173d35; color: white; }
+  .mast .wrap { display: flex; align-items: center; gap: 12px; min-height: 62px; }
+  .mark { color: #d4e599; font-size: 32px; }
+  .brand { font-size: 23px; }
+  .tagline { color: #d4e1d8; font-size: 13px; border-left: 1px solid #729187; padding-left: 16px; }
+  .intro { padding: 42px 0 28px; }
+  .intro p { margin: 1em 0; }
+  .kicker { font: bold 11px/1.5 Consolas, monospace; letter-spacing: 1.4px; color: #526e60; }
+  h1 { margin: 6px 0; font-size: clamp(32px, 4vw, 52px); line-height: 1.1; letter-spacing: -2px; }
+  h2 { margin: 0 0 20px; font-size: 21px; line-height: 1.5; }
+  h3 { margin: 0; }
+  p { margin: 4px 0; color: var(--muted); font-size: 14px; }
+  .workspace { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 24px; align-items: start; padding-bottom: 48px; }
+  .card { border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; }
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  .form, .result { padding: 24px; }
+  .form section + section { border-top: 1px solid #dce1d9; margin-top: 24px; padding-top: 20px; }
+  .pair, .material { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: center; }
+  .material { grid-template-columns: 1fr 1fr; margin-top: 12px; }
+  .fees { display: grid; gap: 16px; }
+  .field { position: relative; display: block; margin-top: 4px; }
+  .field span { position: absolute; top: -9px; left: 10px; padding-inline: 4px; color: var(--muted); background: white; font-size: 12px; }
+  .field input, .field select, .controls select {
+    width: 100%; border: 1px solid #8b9990; border-radius: 8px; padding: 8px 13px;
+    min-height: 40px; color: inherit; background: var(--surface); font: inherit;
+  }
+  .controls select { width: auto; max-width: 100%; }
+  :focus-visible { outline: 3px solid #227562; outline-offset: 2px; }
+  .field small { position: absolute; top: 10px; right: 12px; color: var(--muted); }
+  .field input[aria-invalid="true"] { border-color: #b3261e; }
+  .helper { color: #b3261e; margin: 3px 14px 0; font-size: 12px; }
+  fieldset:disabled :is(input, select) { color: #606b66; border-color: #c9cec9; }
+  .hint, .volume { padding: 12px; margin-top: 12px; border-radius: 4px; background: #f3f5ef; }
+  .hint { border: 1px dashed #c2cfc2; }
+  .alert { margin: 12px 0 16px; padding: 12px 16px; border-radius: 8px; background: #fdeded; color: #611a15; font-size: 14px; }
+  button { cursor: pointer; border: none; border-radius: 8px; font: inherit; font-size: 14px; font-weight: 700; }
+  .primary { width: 100%; min-height: 44px; margin-top: 24px; background: var(--primary); color: white; }
+  button:disabled { cursor: default; background: #e0e0e0; color: #686868; }
+  .retry { margin-left: 12px; padding: 6px 12px; color: var(--primary); background: transparent; }
+  .card header { padding: 22px 24px 16px; background: #e7eee3; border-bottom: 1px solid var(--border); }
+  .card header h2 { margin: 5px 0 0; }
+  .waiting { padding: 45px 24px; text-align: center; background: radial-gradient(#d6dfd3 1px, #fafbf7 1px) 0 0 / 14px 14px; }
+  .waiting p { max-width: 280px; margin: 6px auto 0; }
+  .empty-icon { display: inline-grid; place-items: center; width: 42px; height: 50px; border: 2px solid #93aa98; border-radius: 4px; background: #f6f8f1; color: #6a8973; font-size: 34px; margin-bottom: 15px; }
+  .outcome { display: grid; padding: 13px 16px; margin: 16px 0; background: #e6ede3; border-radius: 4px; }
+  .outcome strong { font-size: 25px; }
+  .result h4 { margin: 20px 0 8px; }
+  .detail { padding: 8px 0; border-bottom: 1px solid #dce1d9; }
+  .detail span { display: block; font-size: 14px; }
+  dl { margin: 12px 0 0; }
+  dl div { display: flex; flex-wrap: wrap; gap: 4px 12px; justify-content: space-between; padding-block: 8px; border-bottom: 1px solid #dce1d9; }
+  dd { margin: 0; font-weight: 650; }
+  @media (max-width: 780px) { .workspace { grid-template-columns: 1fr; } .intro { padding-top: 28px; } }
+  @media (max-width: 480px) { .pair, .material { grid-template-columns: 1fr; } .form, .result { padding: 16px; } .tagline { font-size: 11px; } }
+</style>
+</head>
+<body>
+<div class="controls">
+  <div class="wrap">
+    <label for="state">Состояние прототипа</label>
+    <select id="state">
+      <option value="start">Исходный экран</option>
+      <option value="catalog">Загрузка каталога</option>
+      <option value="empty">Пустой каталог</option>
+      <option value="entry">Ввод заказа</option>
+      <option value="invalid">Ошибка валидации</option>
+      <option value="pending">Расчёт в процессе</option>
+      <option value="success">Успешный расчёт</option>
+      <option value="error">Ошибка расчёта</option>
+      <option value="catalog-error">Ошибка каталога</option>
+    </select>
+  </div>
+</div>
+<div class="mast"><div class="wrap"><span class="mark" aria-hidden="true">◈</span><b class="brand">Верфь</b><span class="tagline">Промышленный планировщик</span></div></div>
+<main class="wrap">
+  <div class="intro">
+    <span class="kicker">EVE ONLINE / ПРОИЗВОДСТВО</span>
+    <h1>Калькулятор заказа</h1>
+    <p>Спланируйте выпуск партии и оцените прибыль. Рецепты условные, цены вводятся вручную.</p>
+  </div>
+  <div class="workspace" id="preview"></div>
+</main>
+<script>
+  const selector = document.getElementById('state')
+  const preview = document.getElementById('preview')
+  let timer
+
+  function field(id, label, value, { money = true, error = '' } = {}) {
+    return `<label class="field" for="${id}"><span>${label}</span>
+      <input id="${id}" inputmode="numeric" value="${value}" ${error ? `aria-invalid="true" aria-describedby="${id}-error"` : ''}>
+      ${money ? '<small aria-hidden="true">ISK</small>' : ''}
+    </label>${error ? `<p class="helper" id="${id}-error">${error}</p>` : ''}`
+  }
+
+  function render() {
+    clearTimeout(timer)
+    const state = selector.value
+    const entered = ['entry', 'invalid', 'pending', 'success', 'error'].includes(state)
+    const disabled = ['catalog', 'empty', 'pending', 'catalog-error'].includes(state)
+    const invalid = state === 'invalid'
+    const summaries = [
+      ['Стоимость материалов', '320 000'], ['Сбор за работу', '20 000'],
+      ['Производственная себестоимость', '340 000'], ['Сбор при продаже', '10 000'],
+      ['Полные затраты', '350 000'], ['Затраты на изделие с учётом продажи', '35 000,00'],
+      ['Выручка', '450 000'], ['Цена безубыточности за изделие', '35 000'],
+    ]
+    preview.innerHTML = `
+      <form class="card form" novalidate>
+        <h2>Параметры партии</h2>
+        ${state === 'catalog' ? '<p role="status">Загрузка каталога…</p>' : ''}
+        ${state === 'empty' ? '<p class="hint" role="status">Нет доступных чертежей <button class="retry" type="button">Обновить каталог</button></p>' : ''}
+        ${state === 'catalog-error' ? '<div class="alert" role="alert">Не удалось загрузить каталог <button class="retry" type="button">Повторить</button></div>' : ''}
+        <fieldset ${disabled ? 'disabled' : ''}>
+          <section>
+            <div class="pair">
+              <label class="field" for="blueprint"><span>Чертёж</span><select id="blueprint">
+                <option value="">Выберите чертёж</option>
+                <option value="shield-module" ${entered ? 'selected' : ''}>Чертёж щитового модуля</option>
+              </select></label>
+              ${field('runs', 'Число запусков', entered ? (invalid ? '0' : '10') : '1',
+                { money: false, error: invalid ? 'Укажите целое число от 1 до 10 000' : '' })}
+            </div>
+            ${entered ? `<p class="volume">Выпуск за запуск <b>1 шт.</b> · На партию <b>${invalid ? '—' : '10'} шт.</b></p>` : ''}
+          </section>
+          <section>
+            <h2>Материалы</h2>
+            ${entered ? `
+              <div class="material"><div><strong>Тританиум</strong><p>20 за запуск · ${invalid ? '—' : '200'} на партию</p></div>${field('tritanium', 'Цена за единицу', invalid ? '' : '1000', { error: invalid ? 'Введите сумму в ISK' : '' })}</div>
+              <div class="material"><div><strong>Пайерит</strong><p>10 за запуск · ${invalid ? '—' : '100'} на партию</p></div>${field('pyerite', 'Цена за единицу', invalid ? '' : '1200', { error: invalid ? 'Введите сумму в ISK' : '' })}</div>
+            ` : '<p class="hint">Выберите чертёж, чтобы увидеть состав партии.</p>'}
+          </section>
+          <section>
+            <h2>Продажа и сборы</h2>
+            <div class="fees">
+              ${field('sale', 'Цена продажи за изделие', entered && !invalid ? '45000' : '',
+                { error: invalid ? 'Введите сумму в ISK' : '' })}
+              ${field('job', 'Сбор за работу на партию', entered ? '20000' : '0')}
+              ${field('sale-fee', 'Сбор при продаже на партию', entered ? '10000' : '0')}
+            </div>
+          </section>
+          ${state === 'error' ? '<p class="alert" role="alert">Не удалось рассчитать заказ. Проверьте данные и повторите расчёт.</p>' : ''}
+          ${state === 'pending' ? '<p role="status">Выполняется расчёт партии…</p>' : ''}
+          <button class="primary" type="submit">${state === 'pending' ? 'Расчёт…' : 'Рассчитать'}</button>
+        </fieldset>
+      </form>
+      <aside class="card" aria-label="Результат расчёта">
+        <header><span class="kicker">РАСЧЁТ ПАРТИИ</span><h2>Сводка заказа</h2></header>
+        ${state === 'success' ? `
+          <div class="result"><h3>Щитовой модуль</h3><p>10 шт. · Запусков: 10</p>
+            <div class="outcome">Прибыль<strong>100 000 ISK</strong></div>
+            <h4>Материалы</h4>
+            <div class="detail"><b>Тританиум</b><span>200 × 1 000 ISK = 200 000 ISK</span></div>
+            <div class="detail"><b>Пайерит</b><span>100 × 1 200 ISK = 120 000 ISK</span></div>
+            <dl>${summaries.map(([label, amount]) => `<div><dt>${label}</dt><dd>${amount} ISK</dd></div>`).join('')}</dl>
+          </div>
+        ` : '<div class="waiting"><span class="empty-icon" aria-hidden="true">≡</span><h3>Расчёт ещё не выполнен</h3><p>Выберите чертёж, заполните цены и нажмите «Рассчитать».</p></div>'}
+      </aside>`
+  }
+
+  function show(state) {
+    selector.value = state
+    render()
+  }
+
+  selector.addEventListener('change', render)
+  preview.addEventListener('change', (event) => {
+    if (event.target.id === 'blueprint') show(event.target.value ? 'entry' : 'start')
+  })
+  preview.addEventListener('click', (event) => {
+    if (!event.target.closest('.retry')) return
+    show('catalog')
+    timer = setTimeout(() => show('start'), 650)
+  })
+  preview.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const data = event.target
+    if (!data.querySelector('#blueprint').value || !/^[1-9]\d*$/.test(data.querySelector('#runs').value) ||
+        !data.querySelector('#sale').value) {
+      show('invalid')
+      document.getElementById('runs').focus()
+      return
+    }
+    show('pending')
+    timer = setTimeout(() => show('success'), 650)
+  })
+  render()
+</script>
+</body>
+</html>
