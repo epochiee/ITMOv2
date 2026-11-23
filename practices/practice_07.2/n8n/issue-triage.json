@@ -1,0 +1,447 @@
+{
+  "name": "Верфь · 7.2 · Обработка Issues",
+  "nodes": [
+    {
+      "parameters": {
+        "authentication": "accessToken",
+        "owner": {
+          "__rl": true,
+          "value": "epochiee",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "eve-industry-planner",
+          "mode": "name"
+        },
+        "events": [
+          "issues"
+        ],
+        "options": {}
+      },
+      "id": "f0af8b6f-9cc7-1540-7d81-921b25466b15",
+      "name": "GitHub: новое обращение",
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      },
+      "webhookId": "82ba3d579b2452f4bbfb5b238d47d669"
+    },
+    {
+      "parameters": {
+        "jsCode": "const githubBase = event => 'https://api.github.com/repos/' + event.repository.full_name.split('/').map(encodeURIComponent).join('/')\nconst event = $input.first().json.body ?? $input.first().json;\nif (event.action !== 'opened' || !event.issue || event.issue.pull_request) return [];\nif (event.repository?.full_name?.toLowerCase() !== \"epochiee/eve-industry-planner\") return [];\nconst issue = event.issue;\nreturn [{ json: { title: issue.title, body: issue.body ?? '', number: issue.number, base: githubBase(event) } }];"
+      },
+      "id": "097938d8-560f-5ef1-7b82-004ab7887755",
+      "name": "Только issues.opened",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        250,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "SET_CLASSIFIER_WORKFLOW_ID",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "title": "={{ $json.title }}",
+            "body": "={{ $json.body }}"
+          },
+          "schema": [
+            {
+              "id": "title",
+              "displayName": "title",
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "body",
+              "displayName": "body",
+              "type": "string",
+              "display": true
+            }
+          ]
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "id": "0c2d5de8-4cfb-b3bd-99a2-91a72edc02da",
+      "name": "Вызвать классификатор",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function normalizeClassification(result) {\n  const types = ['bug', 'task', 'feature'];\n  const confidence = typeof result.confidence === 'number' && Number.isFinite(result.confidence)\n    && result.confidence >= 0 && result.confidence <= 1 ? result.confidence : 0;\n  const type = types.includes(result.type) ? result.type : 'unknown';\n  return {\n    type, confidence,\n    route: type === 'unknown' || confidence < 0.8 ? 'unknown' : type,\n  };\n}\nconst result = normalizeClassification($input.first().json);\nreturn [{json:{ ...$(\"Только issues.opened\").first().json, ...result }}];"
+      },
+      "id": "6a91274e-0686-186b-cce1-1adbbcce4a64",
+      "name": "Применить порог 0.8",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        750,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "bug",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "bug",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "bug"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "task",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "task",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "task"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "feature",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "feature",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "feature"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "unknown",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "unknown",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "unknown"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "050a7904-61a8-c622-8283-673410f4b7e1",
+      "name": "Развести четыре типа",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base + \"/issues/\" + $json.number + \"/labels\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: [\"bug\"] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "d017f483-e4c1-3065-1bf3-0a8ed40659f9",
+      "name": "Лейбл: bug",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1250,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base + \"/issues/\" + $json.number + \"/labels\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: [\"task\"] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "7274b166-625f-6b98-58e2-3d3748d2360b",
+      "name": "Лейбл: task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base + \"/issues/\" + $json.number + \"/labels\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: [\"feature-request\"] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "f13ba501-6c47-56f2-ba01-7f54e712c36d",
+      "name": "Лейбл: feature-request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1750,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $json.base + \"/issues/\" + $json.number + \"/labels\" }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ labels: [\"needs-triage\"] }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "79dc0489-f3c4-be0c-4729-fbfe9dde336b",
+      "name": "Лейбл: needs-triage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Развести четыре типа": {
+      "main": [
+        [
+          {
+            "node": "Лейбл: bug",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Лейбл: task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Лейбл: feature-request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Лейбл: needs-triage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub: новое обращение": {
+      "main": [
+        [
+          {
+            "node": "Только issues.opened",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Только issues.opened": {
+      "main": [
+        [
+          {
+            "node": "Вызвать классификатор",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Вызвать классификатор": {
+      "main": [
+        [
+          {
+            "node": "Применить порог 0.8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Применить порог 0.8": {
+      "main": [
+        [
+          {
+            "node": "Развести четыре типа",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all"
+  }
+}
