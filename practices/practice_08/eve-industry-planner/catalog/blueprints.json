@@ -1,0 +1,56 @@
+[
+  {
+    "id": "shield-module",
+    "name": "Чертёж щитового модуля",
+    "productName": "Щитовой модуль",
+    "outputPerRun": 1,
+    "materials": [
+      {
+        "id": "tritanium",
+        "name": "Тританиум",
+        "quantityPerRun": 20
+      },
+      {
+        "id": "pyerite",
+        "name": "Пайерит",
+        "quantityPerRun": 10
+      }
+    ]
+  },
+  {
+    "id": "repair-module",
+    "name": "Чертёж ремонтного модуля",
+    "productName": "Ремонтный модуль",
+    "outputPerRun": 1,
+    "materials": [
+      {
+        "id": "tritanium",
+        "name": "Тританиум",
+        "quantityPerRun": 15
+      },
+      {
+        "id": "mexallon",
+        "name": "Мексаллон",
+        "quantityPerRun": 5
+      }
+    ]
+  },
+  {
+    "id": "training-ammo",
+    "name": "Чертёж учебного боеприпаса",
+    "productName": "Учебный боеприпас",
+    "outputPerRun": 100,
+    "materials": [
+      {
+        "id": "tritanium",
+        "name": "Тританиум",
+        "quantityPerRun": 8
+      },
+      {
+        "id": "pyerite",
+        "name": "Пайерит",
+        "quantityPerRun": 3
+      }
+    ]
+  }
+]

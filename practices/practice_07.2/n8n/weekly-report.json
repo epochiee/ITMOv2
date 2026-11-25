@@ -1,0 +1,436 @@
+{
+  "name": "Верфь · 7.2 · Недельная статистика",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "2bf16153-2980-63b8-cd91-215e1cbe8809",
+      "name": "Ручной запуск для защиты",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * MON"
+            }
+          ]
+        }
+      },
+      "id": "3c09fcad-1d80-aa64-a746-9c6cb2f97483",
+      "name": "Понедельник 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst repo = \"epochiee/eve-industry-planner\";\nconst recipient = \"set-recipient@example.invalid\";\nconst demoWeekStart = ''; // при ручной проверке допустимо указать завершённый понедельник YYYY-MM-DD\nconst now = $now.setZone('Europe/Moscow');\nconst endOfPeriod = now.startOf('week');\nlet start = endOfPeriod.minus({ weeks: 1 });\nif (demoWeekStart && $execution.mode === 'manual') {\n  const demo = now.set({ year: Number(demoWeekStart.slice(0, 4)), month: Number(demoWeekStart.slice(5, 7)),\n    day: Number(demoWeekStart.slice(8, 10)) }).startOf('day');\n  if (!demo.isValid || demo.toISODate() !== demoWeekStart || demo.weekday !== 1 || demo >= endOfPeriod)\n    throw new Error('Укажите дату завершённого понедельника в формате YYYY-MM-DD');\n  start = demo;\n}\nconst end = start.plus({ weeks: 1 });\nreturn [{ json: { repo, recipient, start: start.toUTC().toISO(), end: end.toUTC().toISO(),\n  queryRange: start.toUTC().toISO({ suppressMilliseconds: true }) + '..' + end.minus({ seconds: 1 }).toUTC().toISO({ suppressMilliseconds: true }),\n  week: start.toISODate(), lastDay: end.minus({ days: 1 }).toISODate() } }];"
+      },
+      "id": "e8dceec6-78ee-2d93-07b4-3076f09ab62d",
+      "name": "Репозиторий, получатель и неделя",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.github.com/search/issues?per_page=100&sort=created&order=asc&q=\" + encodeURIComponent(\"repo:\" + $(\"Репозиторий, получатель и неделя\").first().json.repo + \" is:issue created:\" + $(\"Репозиторий, получатель и неделя\").first().json.queryRange) }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.headers.link?.includes('rel=\"next\"') }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10
+            }
+          }
+        }
+      },
+      "id": "0abe2402-021a-3b96-39d0-5071ba616b35",
+      "name": "Все созданные Issues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.github.com/search/issues?per_page=100&sort=created&order=asc&q=\" + encodeURIComponent(\"repo:\" + $(\"Репозиторий, получатель и неделя\").first().json.repo + \" is:issue created:\" + $(\"Репозиторий, получатель и неделя\").first().json.queryRange + \" label:bug\") }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.headers.link?.includes('rel=\"next\"') }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10
+            }
+          }
+        }
+      },
+      "id": "7b4decec-e64b-ef89-414a-2c860812092e",
+      "name": "Созданные bug",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1000,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.github.com/search/issues?per_page=100&sort=created&order=asc&q=\" + encodeURIComponent(\"repo:\" + $(\"Репозиторий, получатель и неделя\").first().json.repo + \" is:issue created:\" + $(\"Репозиторий, получатель и неделя\").first().json.queryRange + \" label:task\") }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.headers.link?.includes('rel=\"next\"') }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10
+            }
+          }
+        }
+      },
+      "id": "17b4966e-eb59-2279-885e-da07c90c105c",
+      "name": "Созданные task",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1250,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ \"https://api.github.com/search/issues?per_page=100&sort=created&order=asc&q=\" + encodeURIComponent(\"repo:\" + $(\"Репозиторий, получатель и неделя\").first().json.repo + \" is:issue created:\" + $(\"Репозиторий, получатель и неделя\").first().json.queryRange + \" label:feature-request\") }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          },
+          "pagination": {
+            "pagination": {
+              "paginationMode": "updateAParameterInEachRequest",
+              "parameters": {
+                "parameters": [
+                  {
+                    "type": "qs",
+                    "name": "page",
+                    "value": "={{ $pageCount + 1 }}"
+                  }
+                ]
+              },
+              "paginationCompleteWhen": "other",
+              "completeExpression": "={{ !$response.headers.link?.includes('rel=\"next\"') }}",
+              "limitPagesFetched": true,
+              "maxRequests": 10
+            }
+          }
+        }
+      },
+      "id": "85e8afc3-6f4e-2286-6673-7c69eda08a5a",
+      "name": "Созданные feature",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "credentials": {
+        "githubApi": {
+          "name": "Verf GitHub"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "function collectStatistics(all, groups, start, end) {\n  const byType = { bug: 0, task: 0, feature: 0, 'needs-triage': 0, unclassified: 0 };\n  const authors = new Map();\n  const selected = Object.fromEntries(Object.entries(groups).map(([key, items]) =>\n    [key, new Set(items.map(item => item.number))]));\n  const seen = new Set();\n  for (const issue of all) {\n    if (issue.pull_request || seen.has(issue.number)) continue;\n    if (Date.parse(issue.created_at) < Date.parse(start) || Date.parse(issue.created_at) >= Date.parse(end)) continue;\n    seen.add(issue.number);\n    const labels = new Set((issue.labels ?? []).map(label => label.name));\n    const names = { bug: 'bug', task: 'task', feature: 'feature-request' };\n    const matches = Object.keys(names).filter(key => labels.has(names[key]) || selected[key].has(issue.number));\n    const type = labels.has('needs-triage') ? 'needs-triage' :\n      matches.length === 1 ? matches[0] : 'unclassified';\n    byType[type]++;\n    const author = issue.user?.login ?? 'unknown';\n    authors.set(author, (authors.get(author) ?? 0) + 1);\n  }\n  return {\n    total: seen.size, byType,\n    byAuthor: [...authors].sort(([a, countA], [b, countB]) => countB - countA || a.localeCompare(b)),\n  };\n}\nconst settings = $(\"Репозиторий, получатель и неделя\").first().json;\nfunction get(name) {\n  const list = $(name).all().map(x => x.json.body);\n  if (!list.length || list.some(x => !Array.isArray(x?.items) || x.incomplete_results || x.total_count > 1000))\n    throw new Error('Неполная поисковая выборка GitHub: ' + name);\n  const items = list.flatMap(x => x.items);\n  if (new Set(items.map(x => x.number)).size !== list[0].total_count)\n    throw new Error('Поисковая выборка изменилась в процессе чтения: ' + name);\n  return items;\n}\nconst stats = collectStatistics(get('Все созданные Issues'), {\n  bug: get('Созданные bug'), task: get('Созданные task'), feature: get('Созданные feature'),\n}, settings.start, settings.end);\nreturn [{ json: { ...settings, stats } }];"
+      },
+      "id": "1ceaeeac-a4f0-f064-e48a-872da25ff68c",
+      "name": "Сгруппировать по типу и автору",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1750,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "function reportHtml(period, stats) {\n  const esc = value => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;')\n    .replace(/>/g, '&gt;').replace(/\"/g, '&quot;').replace(/'/g, '&#39;');\n  const table = (first, rows) => '<table border=\"1\" cellpadding=\"6\" cellspacing=\"0\"><thead><tr><th>'\n    + esc(first) + '</th><th>Количество</th></tr></thead><tbody>'\n    + rows.map(([key, count]) => '<tr><td>' + esc(key) + '</td><td>' + count\n    + '</td></tr>').join('') + '</tbody></table>';\n  return '<h1>«Верфь» — недельный отчёт</h1><p>' + esc(period) + '</p>'\n    + table('Тип обращения', [['Всего', stats.total], ...Object.entries(stats.byType)])\n    + '<h2>По авторам</h2>' + (stats.byAuthor.length ? table('Автор', stats.byAuthor) : '<p>Обращений нет.</p>');\n}\nconst data = $input.first().json;\nif (!data.recipient || data.recipient.endsWith('.invalid'))\n  throw new Error('Укажите адрес получателя в узле «Репозиторий, получатель и неделя»');\nconst period = data.repo + ', ' + data.week + ' — ' + data.lastDay;\nreturn [{ json: { ...data, html: reportHtml(period, data.stats) } }];"
+      },
+      "id": "af6b52e2-7a51-caa8-360d-1ce5ee2f079a",
+      "name": "Собрать HTML-письмо",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "={{ $json.recipient }}",
+        "subject": "={{ \"Верфь · отчёт за неделю \" + $json.week }}",
+        "emailType": "html",
+        "message": "={{ $json.html }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "cd20e9db-5acc-0e8a-71bc-f65b71a1051c",
+      "name": "Отправить HTML через Gmail",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2250,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "name": "Verf Gmail"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Ручной запуск для защиты": {
+      "main": [
+        [
+          {
+            "node": "Репозиторий, получатель и неделя",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Понедельник 09:00": {
+      "main": [
+        [
+          {
+            "node": "Репозиторий, получатель и неделя",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Репозиторий, получатель и неделя": {
+      "main": [
+        [
+          {
+            "node": "Все созданные Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Все созданные Issues": {
+      "main": [
+        [
+          {
+            "node": "Созданные bug",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Созданные bug": {
+      "main": [
+        [
+          {
+            "node": "Созданные task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Созданные task": {
+      "main": [
+        [
+          {
+            "node": "Созданные feature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Созданные feature": {
+      "main": [
+        [
+          {
+            "node": "Сгруппировать по типу и автору",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сгруппировать по типу и автору": {
+      "main": [
+        [
+          {
+            "node": "Собрать HTML-письмо",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Собрать HTML-письмо": {
+      "main": [
+        [
+          {
+            "node": "Отправить HTML через Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Moscow",
+    "saveDataSuccessExecution": "all"
+  }
+}
